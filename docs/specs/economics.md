@@ -58,10 +58,26 @@ Periodic replay of known exploits injected into the screening queue, marked as d
 - **Restaked ETH path:** allow validating with restaked ETH (EigenLayer AVS) alongside native AEGIS so the validator set isn't purely token-holder-captured.
 - **Council term limits + staggered rotation** against long-term human-layer capture.
 
+## Numeric model
+
+First-pass per-validator P&L under v1 assumptions lives in [`economics-model.csv`](./economics-model.csv). Summary from the base case:
+
+| Line | Value |
+|---|---|
+| Monthly validator pool (gas + inflation + insurance) | **$6.73M** |
+| Per-validator share (75 validators) | **$89.7k / mo** |
+| Per-validator infra + T3 cost | **$830 / mo** |
+| Per-validator gross profit | **~$88.8k / mo** |
+| User cost per tx (base L2 + surcharge) | **$0.008** |
+| Surcharge multiple over vanilla L2 | **1.67×** (target ≤2×) |
+| Break-even surcharge (infra only) | **$0.000087 / tx** |
+
+Assumptions and sensitivities are in the CSV. Numbers are placeholders for the v1 discussion — every row is tuneable.
+
 ## Acceptance criteria
 
-- [ ] `docs/specs/economics.md` (this doc)
-- [ ] Numeric model (per-validator P&L under v1 assumptions) in `docs/specs/economics-model.xlsx` or CSV
+- [x] `docs/specs/economics.md` (this doc)
+- [x] Numeric model in `docs/specs/economics-model.csv`
 - [ ] Slashing parameter table with rationale per value
 - [ ] Token allocation & emission schedule (placeholder percentages fine)
 - [ ] Model-diversity bonus spec + capture-resistance analysis
