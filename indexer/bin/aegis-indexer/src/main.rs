@@ -19,6 +19,11 @@ struct Cli {
     #[arg(long, env = "AEGIS_RPC_URL", default_value = "https://eth.example/rpc")]
     rpc_url: String,
 
+    /// Epoch to tag ingested rows with. Real epoch derivation lives with the
+    /// soul-hash spec (see docs/specs/soul-hash.md); for now callers pass it.
+    #[arg(long, env = "AEGIS_EPOCH", default_value_t = 0)]
+    epoch: u64,
+
     #[command(subcommand)]
     cmd: Cmd,
 }
@@ -52,8 +57,8 @@ async fn main() -> Result<()> {
     let _screener = Tier1RuleEngine::new();
 
     match cli.cmd {
-        Cmd::Backfill { from, to } => backfill(source, store, from, to).await?,
-        Cmd::Stream => stream(source, store).await?,
+        Cmd::Backfill { from, to } => backfill(source, store, cli.epoch, from, to).await?,
+        Cmd::Stream => stream(source, store, cli.epoch).await?,
     }
     Ok(())
 }
@@ -61,26 +66,31 @@ async fn main() -> Result<()> {
 async fn backfill(
     source: Arc<dyn BlockSource>,
     store: Arc<dyn ProfileStore>,
+    epoch: u64,
     from: BlockNumber,
     to: BlockNumber,
 ) -> Result<()> {
-    tracing::info!(from, to, "backfill starting");
+    tracing::info!(epoch, from, to, "backfill starting");
     for n in from..=to {
         let block = source.get_block(n).await?;
-        let rows = extract_block(&block);
+        let rows = extract_block(&block, epoch);
         store.append_tx_features(&rows).await?;
     }
     Ok(())
 }
 
-async fn stream(source: Arc<dyn BlockSource>, store: Arc<dyn ProfileStore>) -> Result<()> {
-    tracing::info!("stream starting");
+async fn stream(
+    source: Arc<dyn BlockSource>,
+    store: Arc<dyn ProfileStore>,
+    epoch: u64,
+) -> Result<()> {
+    tracing::info!(epoch, "stream starting");
     let mut next = source.latest_block().await?;
     loop {
         let head = source.latest_block().await?;
         while next <= head {
             let block = source.get_block(next).await?;
-            let rows = extract_block(&block);
+            let rows = extract_block(&block, epoch);
             store.append_tx_features(&rows).await?;
             next += 1;
         }

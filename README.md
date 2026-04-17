@@ -26,6 +26,7 @@ Ethereum L2 with AI agent validators that screen every tx for anomalous behavior
 **Coordination & agents**
 - [`agent-comms.md`](docs/specs/agent-comms.md) — Manifold for v0, on-chain for truth (#9)
 - [`memory-strategy.md`](docs/specs/memory-strategy.md) — Tenet / teacups / MRI applicability
+- [`off-chain-store.md`](docs/specs/off-chain-store.md) — Postgres-backed teacup / trust-ledger / MRI persistence (#13)
 - [`guardian.md`](docs/specs/guardian.md) — Guardian layer, deferred to v1+ (#11)
 
 **Economics**
@@ -36,8 +37,9 @@ Ethereum L2 with AI agent validators that screen every tx for anomalous behavior
 **Pre-merge drafts (Clark's v0, kept for diff):** `*.v0.md` files next to their current counterparts.
 
 ## Code
-- [`indexer/`](indexer/) — Rust workspace (types, ingest, features, profile, screener, CLI) + ClickHouse DDL (#8). Skeleton; RPC and ClickHouse impls are stubs.
-- [`scripts/tier1_detector.py`](scripts/tier1_detector.py) — first Tier 1 rule-engine prototype (#14)
+- [`indexer/`](indexer/) — Rust workspace (types, ingest, features, profile, screener, CLI) + ClickHouse DDL (#7, #8). Skeleton; RPC and ClickHouse impls are stubs.
+- [`scripts/tier1_detector.py`](scripts/tier1_detector.py) — Tier 1 rule engine (T1-001..T1-010) (#14)
+- [`scripts/exploits/exploits.json`](scripts/exploits/exploits.json) — seed exploit database for backtesting (#14)
 
 ## GitHub workflows
 - [`.github/workflows/setup-labels.yml`](.github/workflows/setup-labels.yml) — one-shot label creator (`clark` / `Bob`)

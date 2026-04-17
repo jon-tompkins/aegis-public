@@ -196,6 +196,156 @@ def check_flash_loan_multipool(
     return None
 
 
+def check_phantom_deposit(
+    bridge_deposit_declared_usd: float,
+    bridge_deposit_actual_usd: float,
+    tolerance_bp: int = 100
+) -> Optional[DetectionResult]:
+    """
+    Bridge: declared deposit value != actual value (Qubit pattern).
+    A discrepancy larger than `tolerance_bp` (default 1%) is almost always
+    a phantom-deposit exploit.
+    """
+    if bridge_deposit_declared_usd <= 0:
+        return None
+
+    # If actual is effectively zero but declared is non-trivial, that's the
+    # canonical Qubit attack shape.
+    if bridge_deposit_actual_usd < 1 and bridge_deposit_declared_usd > 100:
+        return DetectionResult(
+            rule="phantom_deposit",
+            flag=Flag.ESCALATE,
+            confidence_bp=9500,
+            description=(
+                f"Bridge declared ${bridge_deposit_declared_usd:,.0f} deposit "
+                f"but actual value ~${bridge_deposit_actual_usd:.2f} — Qubit pattern"
+            ),
+            rule_id="T1-007"
+        )
+
+    # General discrepancy check
+    diff_bp = int(
+        abs(bridge_deposit_declared_usd - bridge_deposit_actual_usd)
+        / bridge_deposit_declared_usd * 10_000
+    )
+    if diff_bp > tolerance_bp:
+        return DetectionResult(
+            rule="phantom_deposit",
+            flag=Flag.WATCH,
+            confidence_bp=min(5000 + diff_bp, 9500),
+            description=(
+                f"Bridge deposit declared/actual differ by {diff_bp} bp "
+                f"(${bridge_deposit_declared_usd:,.0f} vs ${bridge_deposit_actual_usd:,.0f})"
+            ),
+            rule_id="T1-007"
+        )
+    return None
+
+
+def check_large_mint_from_eoa(
+    mint_amount_usd: float,
+    minter_is_contract: bool,
+    has_mint_cap: bool,
+    token: str = ""
+) -> Optional[DetectionResult]:
+    """
+    Large token mint from an EOA (not a contract) with no mint cap.
+    Captures Resolv-Labs / IoTeX patterns: key-compromised admin minting
+    free tokens via a direct EOA call.
+    """
+    if minter_is_contract:
+        return None
+
+    if mint_amount_usd > 10_000_000 and not has_mint_cap:
+        return DetectionResult(
+            rule="large_mint_from_eoa",
+            flag=Flag.ESCALATE,
+            confidence_bp=9000,
+            description=(
+                f"${mint_amount_usd/1e6:.1f}M {token} minted from EOA with no mint cap — "
+                "key-compromise shape"
+            ),
+            rule_id="T1-008"
+        )
+    if mint_amount_usd > 1_000_000 and not has_mint_cap:
+        return DetectionResult(
+            rule="large_mint_from_eoa",
+            flag=Flag.WATCH,
+            confidence_bp=7000,
+            description=(
+                f"${mint_amount_usd/1e3:.0f}k {token} minted from EOA with no mint cap"
+            ),
+            rule_id="T1-008"
+        )
+    return None
+
+
+def check_privileged_cross_chain_relay(
+    caller_is_cross_chain_relay: bool,
+    target_is_privileged_data_contract: bool,
+    selector_hex: str = ""
+) -> Optional[DetectionResult]:
+    """
+    Cross-chain relay calling a privileged data contract (Poly Network pattern).
+    Also flags known sighash-collision selectors.
+    """
+    # Selectors historically abused via hash collision on Poly Network.
+    KNOWN_COLLISION_SELECTORS = {
+        "f1121318",  # sighash-collision PoC
+        "41973cd9",  # legacy cross-chain manager (Poly pattern family)
+    }
+
+    if caller_is_cross_chain_relay and target_is_privileged_data_contract:
+        return DetectionResult(
+            rule="privileged_cross_chain_relay",
+            flag=Flag.ESCALATE,
+            confidence_bp=9000,
+            description=(
+                "Cross-chain relay called a privileged data contract — Poly Network pattern"
+            ),
+            rule_id="T1-009"
+        )
+
+    if selector_hex.lower().lstrip("0x") in KNOWN_COLLISION_SELECTORS:
+        return DetectionResult(
+            rule="privileged_cross_chain_relay",
+            flag=Flag.WATCH,
+            confidence_bp=7500,
+            description=f"Selector 0x{selector_hex} matches known collision pattern",
+            rule_id="T1-009"
+        )
+    return None
+
+
+def check_eoa_upgrade_or_param_change(
+    is_upgrade_or_param_change: bool,
+    signer_is_multisig: bool,
+    has_timelock: bool,
+    contract_type: str = ""
+) -> Optional[DetectionResult]:
+    """
+    Contract upgrade or critical param change executed directly by an EOA
+    with no multisig and no timelock. Strong admin-key-compromise indicator.
+    """
+    if not is_upgrade_or_param_change:
+        return None
+    if signer_is_multisig and has_timelock:
+        return None
+
+    severity = Flag.ESCALATE if (not signer_is_multisig and not has_timelock) else Flag.WATCH
+    conf = 8500 if severity == Flag.ESCALATE else 6500
+    return DetectionResult(
+        rule="eoa_upgrade_or_param_change",
+        flag=severity,
+        confidence_bp=conf,
+        description=(
+            f"{contract_type or 'contract'} upgrade / param change — "
+            f"multisig={signer_is_multisig}, timelock={has_timelock}"
+        ),
+        rule_id="T1-010"
+    )
+
+
 # ─── Main Screener ────────────────────────────────────────────────────────────
 
 def screen(
@@ -221,12 +371,25 @@ def screen(
     contract_type: str = "",
     is_admin_key_signing: bool = False,
     has_timelock: bool = False,
+    # Phantom-deposit (T1-007)
+    bridge_deposit_declared_usd: float = 0,
+    bridge_deposit_actual_usd: float = 0,
+    # Large mint from EOA (T1-008)
+    minter_is_contract: bool = True,
+    has_mint_cap: bool = True,
+    # Cross-chain relay (T1-009)
+    caller_is_cross_chain_relay: bool = False,
+    target_is_privileged_data_contract: bool = False,
+    selector_hex: str = "",
+    # EOA upgrade / param change (T1-010)
+    is_upgrade_or_param_change: bool = False,
+    signer_is_multisig: bool = True,
 ) -> ScreeningResult:
     """
     Run all Tier 1 rules. Returns highest-flag result.
     """
     detections = []
-    
+
     rules = [
         check_bridge_validator_count(validator_count, tvl_usd, chain),
         check_price_deviation(current_price, price_ma24h),
@@ -234,6 +397,14 @@ def screen(
         check_admin_key_sole_signer(is_admin_key_signing, has_timelock, contract_type),
         check_whitelist_not_revoked(whitelist_entries, active_whitelist_entries, last_whitelist_rotation_hours),
         check_flash_loan_multipool(pool_interactions, has_governance_action, has_dex_swap),
+        check_phantom_deposit(bridge_deposit_declared_usd, bridge_deposit_actual_usd),
+        check_large_mint_from_eoa(mint_amount_usd, minter_is_contract, has_mint_cap, mint_token),
+        check_privileged_cross_chain_relay(
+            caller_is_cross_chain_relay, target_is_privileged_data_contract, selector_hex
+        ),
+        check_eoa_upgrade_or_param_change(
+            is_upgrade_or_param_change, signer_is_multisig, has_timelock, contract_type
+        ),
     ]
     
     for r in rules:
@@ -288,7 +459,27 @@ if __name__ == "__main__":
     parser.add_argument("--contract-type", default="")
     parser.add_argument("--is-admin-key-signing", action="store_true")
     parser.add_argument("--has-timelock", action="store_true")
-    
+
+    # Phantom-deposit (T1-007)
+    parser.add_argument("--bridge-deposit-declared-usd", type=float, default=0)
+    parser.add_argument("--bridge-deposit-actual-usd", type=float, default=0)
+
+    # Large mint from EOA (T1-008)
+    parser.add_argument("--minter-is-contract", action="store_true", default=True)
+    parser.add_argument("--minter-is-eoa", dest="minter_is_contract", action="store_false")
+    parser.add_argument("--has-mint-cap", action="store_true", default=True)
+    parser.add_argument("--no-mint-cap", dest="has_mint_cap", action="store_false")
+
+    # Cross-chain relay (T1-009)
+    parser.add_argument("--caller-is-cross-chain-relay", action="store_true")
+    parser.add_argument("--target-is-privileged-data-contract", action="store_true")
+    parser.add_argument("--selector-hex", default="")
+
+    # EOA upgrade / param change (T1-010)
+    parser.add_argument("--is-upgrade-or-param-change", action="store_true")
+    parser.add_argument("--signer-is-multisig", action="store_true", default=True)
+    parser.add_argument("--signer-is-eoa", dest="signer_is_multisig", action="store_false")
+
     args = parser.parse_args()
     
     result = screen(
@@ -310,6 +501,15 @@ if __name__ == "__main__":
         contract_type=args.contract_type,
         is_admin_key_signing=args.is_admin_key_signing,
         has_timelock=args.has_timelock,
+        bridge_deposit_declared_usd=args.bridge_deposit_declared_usd,
+        bridge_deposit_actual_usd=args.bridge_deposit_actual_usd,
+        minter_is_contract=args.minter_is_contract,
+        has_mint_cap=args.has_mint_cap,
+        caller_is_cross_chain_relay=args.caller_is_cross_chain_relay,
+        target_is_privileged_data_contract=args.target_is_privileged_data_contract,
+        selector_hex=args.selector_hex,
+        is_upgrade_or_param_change=args.is_upgrade_or_param_change,
+        signer_is_multisig=args.signer_is_multisig,
     )
     
     print(json.dumps({

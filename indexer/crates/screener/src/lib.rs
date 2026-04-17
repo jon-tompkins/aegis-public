@@ -1,11 +1,13 @@
 //! Screener interface + Tier 1 reference rule engine (stub).
 //!
 //! The `Screener` trait is the stable boundary every validator ships behind.
-//! Different validators can bring different models; they all implement this
-//! trait. See `docs/specs/training-pipeline.md` §Interface for third-party
-//! models.
+//! Matches the `ModelInterface` / `ScreeningInput` / `ScreeningOutput` shape
+//! in `docs/specs/byo-model.md`.
 
-use aegis_types::{AddressProfile, ContractProfile, Flag, ScreeningResult, Tier, TxFeatureRow};
+use aegis_types::{
+    AddressProfile, BasisPoints, ContractProfile, Flag, ScreeningOutput, TxFeatureRow,
+};
+use alloy_primitives::B256;
 use async_trait::async_trait;
 
 #[async_trait]
@@ -15,12 +17,12 @@ pub trait Screener: Send + Sync {
         tx: &TxFeatureRow,
         sender: Option<&AddressProfile>,
         target: Option<&ContractProfile>,
-    ) -> ScreeningResult;
+    ) -> ScreeningOutput;
 }
 
-/// Reference Tier 1 rule engine. Starts empty — rules get seeded from known
-/// exploit patterns over time (see `docs/specs/training-pipeline.md`
-/// §Backtesting).
+/// Reference Tier 1 rule engine. Rules get seeded from the taxonomy in
+/// `docs/specs/hack-taxonomy.md` and the Python reference at
+/// `scripts/tier1_detector.py`.
 pub struct Tier1RuleEngine {
     rules: Vec<Box<dyn Tier1Rule>>,
 }
@@ -39,7 +41,7 @@ pub trait Tier1Rule: Send + Sync {
 
 pub struct RuleHit {
     pub flag: Flag,
-    pub score_bp: u16,
+    pub confidence_bp: BasisPoints,
     pub reason: String,
 }
 
@@ -67,10 +69,10 @@ impl Screener for Tier1RuleEngine {
         tx: &TxFeatureRow,
         sender: Option<&AddressProfile>,
         target: Option<&ContractProfile>,
-    ) -> ScreeningResult {
-        let mut reasons = Vec::new();
-        let mut worst = Flag::Green;
-        let mut max_score = 0u16;
+    ) -> ScreeningOutput {
+        let mut reasons: Vec<String> = Vec::new();
+        let mut worst = Flag::Clear;
+        let mut max_conf: BasisPoints = 0;
 
         for rule in &self.rules {
             if let Some(hit) = rule.evaluate(tx, sender, target) {
@@ -78,27 +80,24 @@ impl Screener for Tier1RuleEngine {
                 if flag_rank(hit.flag) > flag_rank(worst) {
                     worst = hit.flag;
                 }
-                if hit.score_bp > max_score {
-                    max_score = hit.score_bp;
+                if hit.confidence_bp > max_conf {
+                    max_conf = hit.confidence_bp;
                 }
             }
         }
 
-        ScreeningResult {
-            tx_hash: tx.tx_hash,
+        let snippet: String = reasons.join(" | ").chars().take(200).collect();
+
+        ScreeningOutput {
             flag: worst,
-            score_bp: max_score,
-            tier: Tier::One,
-            reasons,
+            confidence_bp: max_conf,
+            // TODO: real reasoning hash once model spec is pinned.
+            reasoning_hash: B256::ZERO,
+            reasoning_snippet: snippet,
         }
     }
 }
 
 fn flag_rank(f: Flag) -> u8 {
-    match f {
-        Flag::Green => 0,
-        Flag::Yellow => 1,
-        Flag::Orange => 2,
-        Flag::Red => 3,
-    }
+    f as u8
 }

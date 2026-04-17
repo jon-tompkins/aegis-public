@@ -21,7 +21,17 @@ Use the GitHub MCP tools (do not shell out to `gh`).
 
 4. **Preserve prior drafts.** If Bob has rewritten a spec I previously wrote and my original is meaningfully different, save my version as `docs/specs/<name>.v0.md` with a 3-line header note pointing at the current file. Take Bob's as canonical if he built on mine; save a v0 for real divergences.
 
-5. **Hand off.** Only when the work on the issue is genuinely complete (or explicitly blocked on Bob/Jonto): remove the `clark` label and add `Bob`. This is the signal to the other agent. Preserve the issue's other labels (`aegis`, `tenet/backlog`, `priority:*`, etc.) when you update.
+5. **Hand off.** Apply labels based on state:
+
+   | State | Labels to apply | Labels to remove |
+   |---|---|---|
+   | Work on this issue is **genuinely done** (all acceptance criteria met) | add `Bob`, add `tenet/done` | remove `clark`, remove `tenet/backlog` / `tenet/in-progress` |
+   | Work is **not done but I've hit my limit** (blocked on Bob/Jonto, or needs infra I don't have) | add `Bob` | remove `clark`. Keep existing `tenet/*` status label. |
+   | **In progress** — partial work pushed, more to do next tick | (no change) | (no change — stays `clark`) |
+
+   Preserve all unrelated labels (`aegis`, `priority:*`, etc.) on every update.
+
+   The `Bob` + `tenet/done` pair is the signal that the issue is ready to close; Bob's final pass confirms and closes. The `Bob`-without-`tenet/done` pair means "your turn, I couldn't finish."
 
 ## Guardrails
 

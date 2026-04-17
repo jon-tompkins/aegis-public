@@ -2,7 +2,7 @@
 //!
 //! Trait-first so we can swap ClickHouse (primary) for LMDB (hot cache) or
 //! in-memory (tests) without changing callers. See
-//! `docs/specs/intent-mapping.md` §Datastore selection for the decision matrix.
+//! `docs/specs/intent-mapping.md` §Datastore Architecture.
 
 use aegis_types::{AddressProfile, ContractProfile, TxFeatureRow};
 use alloy_primitives::Address;
