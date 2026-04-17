@@ -1,0 +1,12 @@
+[package]
+name = "aegis-screener"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+aegis-types.workspace = true
+alloy-primitives.workspace = true
+async-trait.workspace = true
+thiserror.workspace = true
+tracing.workspace = true

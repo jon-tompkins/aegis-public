@@ -23,6 +23,10 @@ Contributor-ready designs, one per backlog issue:
 
 **Build sequence (data-first):** #7 → #8 → #10 → #12. #9 is research-blocked; #11 is optional/deferred.
 
+## Code
+
+- [`indexer/`](indexer/) — Rust workspace: RPC ingest, feature extraction, profile store, Tier 1/2 screener, CLI. Skeleton in place; trait bodies are stubs. See [`indexer/README.md`](indexer/README.md).
+
 ## Key Decisions Made
 - OP Stack fork (MIT, modular, designed to be extended)
 - 3-tier screening: heuristics → statistical → LLM escalation
