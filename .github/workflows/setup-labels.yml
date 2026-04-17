@@ -1,0 +1,38 @@
+name: setup-labels
+
+# One-shot workflow that ensures the `clark` and `Bob` coordination labels
+# exist on this repo. Safe to re-run — `gh label create --force` upserts
+# the label, creating it if missing and updating color/description otherwise.
+#
+# Trigger from the Actions tab → "setup-labels" → "Run workflow".
+
+on:
+  workflow_dispatch:
+
+permissions:
+  issues: write
+
+jobs:
+  create-labels:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Create / update coordination labels
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+
+          gh label create clark \
+            --color "FBCA04" \
+            --description "Owned by Claude — pending work" \
+            --force
+
+          gh label create Bob \
+            --color "0E8A16" \
+            --description "Handoff to Bob — ready for next agent" \
+            --force
+
+          echo "Labels present:"
+          gh label list --search clark
+          gh label list --search Bob
