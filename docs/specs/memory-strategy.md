@@ -252,6 +252,49 @@ The soul hash verifies the profiles were updated correctly. Teacups drive when t
 
 ---
 
+## Further Research: Mesh Query Network
+
+**Suggested by Jonto — 2026-04-17**
+
+Beyond passive MRI snapshots, agents could **actively query the mesh** when interesting or ambiguous events occur:
+
+```
+Validator notices unusual pattern
+    │
+    ▼
+Post to mesh: "Has anyone seen this contract behavior before?"
+    │
+    ▼
+Peer agents respond with observations, similar txs, context
+    │
+    ▼
+Response aggregated → filed as teacup
+    │
+    ▼
+Feeds training pipeline (#8) — enriches profile with mesh knowledge
+```
+
+**Why this matters for training:**
+- Individual validators see limited tx history
+- Mesh-wide observations compound into collective intelligence
+- Novel attack patterns spotted by one validator can propagate to all
+- Enriches teacups with peer context, not just local observation
+
+**Implementation path:**
+- Manifold task system already supports broadcast queries
+- Extend agent runner to accept "mesh_query" tasks
+- Responses filed as enriched teacups (local observation + peer context)
+- This stays OFF the screening hot path — purely for training enrichment
+
+**This also unlocks:**
+- Cross-validator false positive detection
+- Distributed pattern recognition (one agent sees pattern → queries mesh → all learn)
+- Council consultation via mesh (agent uncertain → council agents respond)
+
+**Status:** Further research. Low urgency, high potential for training quality.
+
+---
+
 ## Next Steps
 
 If this research is approved:
@@ -261,3 +304,4 @@ If this research is approved:
 3. Design the Trust Ledger integration with the staking contract
 4. Write the off-chain store spec (TENET or dedicated)
 5. Implement the boundary enforcement (screening input = profiles + tx only)
+6. **[Further research]** Design mesh query protocol using Manifold task broadcast
