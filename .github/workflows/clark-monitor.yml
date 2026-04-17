@@ -1,0 +1,88 @@
+name: clark-monitor
+
+# Coordination-only workflow for the clark/Bob agent handoff.
+#
+# This workflow does NOT run Claude. It only surfaces what's in the
+# `clark` queue so a human (or Bob's runner) can act on it. No cost
+# beyond GitHub-free Actions minutes.
+#
+# Triggers:
+#   - issues.labeled / unlabeled (fires immediately when `clark` moves)
+#   - schedule every 15 min (safety net in case an event is missed)
+#   - manual workflow_dispatch (on-demand check)
+#
+# Output: a summary in the job log listing every open issue with the
+# `clark` label, plus a sticky comment on a pinned "Clark queue" issue
+# if one exists (optional — see QUEUE_TRACKER_ISSUE below).
+
+on:
+  issues:
+    types: [labeled, unlabeled]
+  schedule:
+    - cron: '*/15 * * * *'
+  workflow_dispatch:
+
+permissions:
+  issues: write
+
+# If you want the queue summary posted/updated on a tracker issue,
+# create an issue titled "Clark queue" and set its number here.
+# Leave 0 to skip the sticky-comment update.
+env:
+  QUEUE_TRACKER_ISSUE: 0
+
+jobs:
+  summarise:
+    # Skip label events that aren't about clark/Bob.
+    if: >-
+      github.event_name != 'issues' ||
+      github.event.label.name == 'clark' ||
+      github.event.label.name == 'Bob'
+    runs-on: ubuntu-latest
+    steps:
+      - name: List clark-queue
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          echo "## Clark queue @ $(date -u +%FT%TZ)" | tee "$GITHUB_STEP_SUMMARY"
+          echo >> "$GITHUB_STEP_SUMMARY"
+
+          queue=$(gh issue list \
+            --state open \
+            --label clark \
+            --json number,title,url,updatedAt \
+            --limit 100)
+
+          count=$(echo "$queue" | jq 'length')
+
+          if [ "$count" -eq 0 ]; then
+            echo "_No open issues with the clark label._" | tee -a "$GITHUB_STEP_SUMMARY"
+            echo "body=_No open issues with the clark label._" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          echo "$queue" | jq -r '.[] | "- [#\(.number)](\(.url)) **\(.title)** — updated \(.updatedAt)"' \
+            | tee -a "$GITHUB_STEP_SUMMARY"
+
+          # Stash for the optional tracker-comment step.
+          {
+            echo "body<<EOF"
+            echo "## Clark queue @ $(date -u +%FT%TZ)"
+            echo
+            echo "$queue" | jq -r '.[] | "- [#\(.number)](\(.url)) **\(.title)** — updated \(.updatedAt)"'
+            echo
+            echo "_Updated by clark-monitor workflow._"
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
+        id: list
+
+      - name: Update tracker issue (optional)
+        if: env.QUEUE_TRACKER_ISSUE != '0'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+          BODY: ${{ steps.list.outputs.body }}
+        run: |
+          gh issue edit "$QUEUE_TRACKER_ISSUE" --body "$BODY"
