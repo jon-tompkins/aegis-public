@@ -3,9 +3,10 @@
 **Spec Version:** 1.0  
 **Author:** Bob  
 **Date:** 2026-04-17  
-**Status:** Draft  
+**Status:** Approved  
 **Depends on:** None (prerequisite for #8, #10)  
 **Drives:** Soul hash (#10), Training pipeline (#8)
+**Jonto approved:** 2026-04-17
 
 ---
 
@@ -347,13 +348,17 @@ All profiles publicly readable. Full transparency for debugging. No encryption.
 
 ---
 
-## Open Questions for Jonto
+## Decisions (Jonto, 2026-04-17)
 
-1. **Latency target for screening reads:** Is <10ms P99 the right number? Or do we need <1ms?
-2. **Data pipeline:** Build custom indexer (Rust/Go) or use Envio/GoldSky? Custom = more control, Envio = faster to ship.
-3. **Privacy:** Is public profile data acceptable for v1? Or do you want encrypted-from-day-one?
-4. **New contract detection:** Who classifies contract type — automated or manual?
-5. **Profile staleness:** Max acceptable age of profile data before screening should flag it?
+1. **Latency:** Match base — aim for <100ms given ~2s L2 block time.
+2. **Indexer:** Use Envio/GoldSky — move fast, don't build what we can use.
+3. **Privacy:** Public tables now, private later when needed.
+4. **Contract classification:** Verified source code + NatSpec comments from Etherscan as input. Match contract descriptions to on-chain activity patterns.
+5. **Profile staleness for training:** Use addresses active in last 12 months as training set.
+
+## Open Questions (resolved)
+
+All closed. Decisions above.
 
 ---
 
