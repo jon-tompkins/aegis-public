@@ -257,3 +257,19 @@ Inflation (AEGIS) ──────→ Validator pool (bounded)
 3. **Build chain-native DeFi per DeFi in a Box** — AMM + lending as core primitives. Validators = fee recipients.
 4. **Agents as hands-off protocol managers** — per Jonto's model. Only intervene on threshold breaches.
 5. **AEGIS token = staking + governance only** — no speculative trading utility in v1.
+
+
+---
+
+## Design Decision (Jonto — 2026-04-17)
+
+**Gas token: ETH or chain-native stable. NOT AEGIS.**
+
+Users pay gas in ETH (or stable) — no AEGIS required to transact. AEGIS is staking + governance only.
+
+This avoids:
+- AEGIS speculative premium baked into every tx cost
+- Token price volatility affecting user gas costs
+- New token friction for onboarding users
+
+
