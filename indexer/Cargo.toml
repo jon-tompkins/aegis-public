@@ -1,0 +1,39 @@
+[workspace]
+resolver = "2"
+members = [
+    "crates/types",
+    "crates/ingest",
+    "crates/features",
+    "crates/profile",
+    "crates/screener",
+    "bin/aegis-indexer",
+]
+
+[workspace.package]
+version = "0.0.1"
+edition = "2021"
+rust-version = "1.75"
+license = "Apache-2.0"
+repository = "https://github.com/jon-tompkins/aegis-public"
+
+[workspace.dependencies]
+# Internal
+aegis-types = { path = "crates/types" }
+aegis-ingest = { path = "crates/ingest" }
+aegis-features = { path = "crates/features" }
+aegis-profile = { path = "crates/profile" }
+aegis-screener = { path = "crates/screener" }
+
+# External — pinned loosely; tighten before we ship
+alloy = { version = "0.8", features = ["full", "rpc-types-eth", "providers", "network"] }
+alloy-primitives = "0.8"
+anyhow = "1"
+async-trait = "0.1"
+clap = { version = "4", features = ["derive", "env"] }
+futures = "0.3"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+thiserror = "2"
+tokio = { version = "1", features = ["full"] }
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }

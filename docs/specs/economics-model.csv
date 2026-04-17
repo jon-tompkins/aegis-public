@@ -1,0 +1,34 @@
+section,metric,value,unit,notes
+assumption,chain_tps_avg,500,tx/s,Rough L2 steady-state throughput target
+assumption,chain_tx_per_month,1296000000,tx/mo,500 tps * 30d * 86400s
+assumption,validator_count,75,validators,Midpoint of 50-100 band
+assumption,gas_surcharge_per_tx_usd,0.0050,USD/tx,Target sticker cost for users above base gas
+assumption,inflation_annual_pct,3.0,%,Bounded bootstrap inflation paid in AEGIS
+assumption,circulating_supply_usd,50000000,USD,Placeholder for v1 token valuation
+assumption,insurance_tier_monthly_usd,120000,USD/mo,Optional protocol-paid premiums across high-TVL users
+cost,inference_cost_per_tx_usd,0.00007,USD/tx,From aegis-training-plan (T1+T2 dominant path)
+cost,t3_escalation_rate_pct,0.5,%,Fraction of txs escalated to LLM tier
+cost,t3_cost_per_escalation_usd,0.0015,USD/escalation,Order-of-magnitude LLM call cost
+cost,infra_cost_per_validator_monthly_usd,700,USD/mo,Per aegis-training-plan validator cost figure
+revenue,monthly_gas_surcharge_pool_usd,6480000,USD/mo,chain_tx_per_month * gas_surcharge_per_tx_usd
+revenue,monthly_inflation_pool_usd,125000,USD/mo,circulating_supply_usd * inflation_annual_pct / 12
+revenue,monthly_insurance_pool_usd,120000,USD/mo,Pass-through from insurance_tier_monthly_usd
+revenue,monthly_total_validator_pool_usd,6725000,USD/mo,Sum of the three pools
+validator,monthly_pool_share_per_validator_usd,89666,USD/mo,monthly_total_validator_pool_usd / validator_count
+validator,monthly_infra_cost_usd,700,USD/mo,infra_cost_per_validator_monthly_usd
+validator,monthly_t3_escalation_cost_usd,130,USD/mo,chain_tx_per_month * t3_rate * t3_cost / validator_count
+validator,monthly_gross_profit_usd,88836,USD/mo,Share minus infra minus T3 cost
+validator,monthly_net_after_stake_apr_usd,78836,USD/mo,Rough haircut for 10k/mo stake opportunity cost
+validator,break_even_gas_surcharge_per_tx_usd,0.000087,USD/tx,Floor gas cost at which net profit = 0 (infra only)
+user,base_l2_gas_per_tx_usd,0.003,USD/tx,Rough L2 median fee
+user,total_user_cost_per_tx_usd,0.008,USD/tx,base_l2_gas + gas_surcharge
+user,surcharge_multiple_over_base,1.67,x,total / base (target <= 2x)
+slashing,stale_profile_root_pct,1.0,%,Per offense, capped 10% per epoch
+slashing,timeout_pct,0.1,%,Per offense, warn at 3 in 24h
+slashing,confirmed_exploit_approval_pct,100.0,%,After council confirmation
+sensitivity,note_1,downside,,Halve surcharge to 0.0025 -> validator net drops ~50% and break-even headroom tightens but remains positive
+sensitivity,note_2,upside,,T3 escalation rate doubling to 1% costs ~130 extra per validator monthly (negligible)
+sensitivity,note_3,validator_count,,Doubling to 150 halves per-validator share; still >30k/mo under base case
+open_question,inflation_tail,TBD,,Cap supply or continue low inflation indefinitely?
+open_question,mev_share,TBD,,MEV cut for validators -- include in this model or separate?
+open_question,insurance_pricing,TBD,,TVL-indexed oracle vs self-declared tier

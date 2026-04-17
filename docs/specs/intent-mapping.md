@@ -240,6 +240,16 @@ func (a *AddressProfileWrapper) Hash() [32]byte {
 - `active_hours`: 3 bytes, packed bitfield (72 bits for 72 8-hour windows)
 - `risk_flags`: 2 bytes, bitfield
 
+### Byte-level test-vector reference
+
+A fully-worked byte-level SSZ example for an earlier (smaller) `AddressProfile` shape lives in [`intent-mapping.v0.md`](./intent-mapping.v0.md#byte-level-example--a-minimal-addressprofile). It walks through every field as hex so future implementers have a ground-truth vector to test against.
+
+**Two things to reconcile before porting it to this spec:**
+1. **Endianness.** v0 used SSZ-native little-endian for `UInt256`; the table above says big-endian. SSZ canonically is little-endian — clarify and pick one before writing real test vectors.
+2. **Schema shape.** The v0 profile had `tx_freq_per_day_p50/p95` and `tx_value_wei_p50/p95/p99` percentiles rather than `tx_count_30d` / `avg_value_30d` / `max_value_30d`. Decide which is canonical; the example needs re-deriving either way.
+
+Tracked as an open question against #7.
+
 ---
 
 ## Cold Start Policy
