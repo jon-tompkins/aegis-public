@@ -3,7 +3,7 @@ import path from 'path'
 import { markdownToHtml } from '../../lib/markdown'
 import { notFound } from 'next/navigation'
 
-const DOCS_PATH = path.join(process.cwd(), '../../aegis/docs/specs')
+const SPECS_PATH = path.join(process.cwd(), 'src/app/docs/specs')
 
 const docSlugs: Record<string, string> = {
   'chain-design': 'chain-design.md',
@@ -35,7 +35,7 @@ export default async function DocPage({ params }: PageProps) {
     notFound()
   }
 
-  const filePath = path.join(DOCS_PATH, filename)
+  const filePath = path.join(SPECS_PATH, filename)
 
   let content = ''
   try {
