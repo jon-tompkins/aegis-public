@@ -58,18 +58,23 @@ function ShieldIcon({ className = '' }: { className?: string }) {
 function Nav() {
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 border-b border-[#1a2a4a] bg-[#050810]/80 backdrop-blur-md">
-      <div className="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
+      <div className="max-w-6xl mx-auto px-6 sm:px-8 lg:px-12 h-16 flex items-center justify-between">
         <div className="flex items-center gap-3">
           <ShieldIcon className="w-7 h-7 text-[#00d4ff]" />
           <span className="font-['Space_Grotesk'] font-bold text-lg text-white">Aegis</span>
         </div>
         <div className="flex items-center gap-6 text-sm font-medium">
-          <Link href="/docs/chain-design" className="text-[#4a5a7a] hover:text-[#c8d4e8] transition-colors">
+          <Link href="/docs/soul-hash" className="text-[#4a5a7a] hover:text-[#c8d4e8] transition-colors">
             Docs
           </Link>
-          <Link href="/docs/hack-taxonomy" className="text-[#4a5a7a] hover:text-[#c8d4e8] transition-colors">
-            Research
-          </Link>
+          <a
+            href="https://github.com/jon-tompkins/aegis-public/issues"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-[#4a5a7a] hover:text-[#c8d4e8] transition-colors"
+          >
+            Issues
+          </a>
           <a
             href="https://github.com/jon-tompkins/aegis-public"
             target="_blank"
@@ -89,11 +94,11 @@ function Hero() {
   return (
     <section className="relative min-h-screen flex items-center justify-center overflow-hidden pt-16">
       <ShieldGrid />
-      <div className="relative z-10 max-w-4xl mx-auto px-6 text-center">
+      <div className="relative z-10 max-w-4xl mx-auto px-6 sm:px-8 lg:px-12 text-center">
         <div className="animate-fade-up">
           <div className="inline-flex items-center gap-2 mb-8 px-4 py-2 rounded-full border border-[#1a2a4a] bg-[#0d1525]">
             <span className="w-2 h-2 rounded-full bg-[#00cc88] animate-pulse" />
-            <span className="text-sm font-['JetBrains_Mono'] text-[#4a5a7a]">Ethereum L2 — AI Agent Validators</span>
+            <span className="text-sm font-['JetBrains_Mono'] text-[#4a5a7a]">Pre-alpha · specs only</span>
           </div>
         </div>
 
@@ -103,13 +108,12 @@ function Hero() {
         </h1>
 
         <p className="text-lg md:text-xl text-[#4a5a7a] max-w-2xl mx-auto mb-10 animate-fade-up animate-fade-up-delay-2">
-          Aegis is an Ethereum L2 where AI agents validate every transaction.
-          Anomalies get paused. Exploits get stopped. Before they drain the pool.
+          An Ethereum L2 where AI validators screen every transaction. Anomalies get paused. Exploits get stopped — before the pool drains.
         </p>
 
         <div className="flex flex-col sm:flex-row items-center justify-center gap-4 animate-fade-up animate-fade-up-delay-3">
-          <Link href="/docs/chain-design" className="btn-primary">
-            Read the Spec
+          <Link href="/docs/soul-hash" className="btn-primary">
+            Read the specs
           </Link>
           <a
             href="https://github.com/jon-tompkins/aegis-public"
@@ -135,23 +139,19 @@ function Hero() {
 // What is Aegis
 function WhatIsAegis() {
   return (
-    <section className="py-24 px-6 bg-[#0a0f1a]">
+    <section className="py-24 px-6 sm:px-8 lg:px-12 bg-[#0a0f1a]">
       <div className="max-w-4xl mx-auto">
         <h2 className="text-3xl font-['Space_Grotesk'] font-bold text-white mb-8">
-          What is Aegis?
+          What it is
         </h2>
         <div className="space-y-6 text-[#4a5a7a] text-lg">
           <p>
-            Aegis is an Ethereum Layer 2 built on the OP Stack. Every transaction — before it executes — passes through a screening layer run by AI agents. These agents have been trained on years of on-chain exploit patterns. They know what a drain looks like before it happens.
-          </p>
-          <p>
-            If a transaction looks anomalous, the Guardian pauses it. The validator set votes. If it confirms malicious, the transaction is rejected and the contract is frozen. No drain. No exploit. Just a chain that fights back.
+            An Ethereum L2 where every transaction passes through a screening layer before it executes. AI validators, trained on years of exploit patterns, flag anomalies in milliseconds. Suspect transactions pause. The validator set votes. Confirmed exploits are rejected on-chain.
           </p>
         </div>
 
-        {/* Simple flow diagram */}
         <div className="mt-12 flex flex-wrap items-center justify-center gap-3 text-sm font-['JetBrains_Mono']">
-          {['Tx Submitted', 'Guardian Screens', 'Clear or Escalate', 'Validator Vote', 'On-Chain Result'].map((step, i) => (
+          {['Tx submitted', 'Screened', 'Clear or escalate', 'Validator vote', 'On-chain result'].map((step, i) => (
             <div key={step} className="flex items-center gap-3">
               <div className="px-4 py-2 rounded-lg bg-[#0d1525] border border-[#1a2a4a] text-[#c8d4e8]">
                 {step}
@@ -165,34 +165,31 @@ function WhatIsAegis() {
   )
 }
 
-// Why it matters — 3 cards
-function WhyItMatters() {
+// Core principles — 3 cards
+function Principles() {
   const cards = [
     {
-      icon: '⚡',
       tag: 'Agentic',
-      title: 'AI Screening at Scale',
-      desc: 'Every tx screened in milliseconds. Tier 1 heuristics run on 100% of transactions. Tier 2 statistical models catch anomalies. Tier 3 LLM explains the hard cases.',
+      title: 'Screening at chain speed',
+      desc: 'Three tiers: deterministic rules on 100% of txs, statistical models on anomalies, LLM review on the hard cases.',
     },
     {
-      icon: '🔐',
       tag: 'Verifiable',
-      title: 'Soul Hash Verification',
-      desc: 'Canonical behavioral profiles committed on-chain as a Merkle root. Validators who run the same profiles produce the same results. Proof without disclosure.',
+      title: 'Soul-hash commitments',
+      desc: 'Canonical behavioral profiles committed on-chain as a Merkle root. Different validators, same profile, same result.',
     },
     {
-      icon: '💰',
       tag: 'Aligned',
-      title: 'Economic Accountability',
-      desc: 'Validators stake AEGIS and ETH. Slash for negligence. Earn for honest screening. Gas paid in ETH, not AEGIS. No speculative premium baked into every tx.',
+      title: 'Economic accountability',
+      desc: 'Validators stake AEGIS and ETH; slash for negligence, earn for honest screening. Users pay gas in ETH — no token friction.',
     },
   ]
 
   return (
-    <section className="py-24 px-6">
+    <section className="py-24 px-6 sm:px-8 lg:px-12">
       <div className="max-w-5xl mx-auto">
         <h2 className="text-3xl font-['Space_Grotesk'] font-bold text-white mb-12 text-center">
-          Why it matters
+          Core principles
         </h2>
         <div className="grid md:grid-cols-3 gap-6">
           {cards.map((card) => (
@@ -200,7 +197,6 @@ function WhyItMatters() {
               key={card.title}
               className="p-6 rounded-xl bg-[#0d1525] border border-[#1a2a4a] card-hover"
             >
-              <span className="text-2xl mb-4 block">{card.icon}</span>
               <span className="tag tag-cyan mb-4 inline-block">{card.tag}</span>
               <h3 className="text-lg font-['Space_Grotesk'] font-semibold text-white mb-3">
                 {card.title}
@@ -216,55 +212,64 @@ function WhyItMatters() {
   )
 }
 
-// Stack section
-function Stack() {
-  return (
-    <section className="py-24 px-6 bg-[#0a0f1a]">
-      <div className="max-w-3xl mx-auto text-center">
-        <h2 className="text-3xl font-['Space_Grotesk'] font-bold text-white mb-4">
-          Built on what works
-        </h2>
-        <p className="text-[#4a5a7a] mb-12">
-          No novel cryptography. No unproven consensus. Just battle-tested components wired together correctly.
-        </p>
-        <div className="grid grid-cols-3 gap-6 text-center">
-          {[
-            { name: 'OP Stack', desc: 'Ethereum L2' },
-            { name: 'AI Agents', desc: 'Screening layer' },
-            { name: 'Ethereum', desc: 'Security' },
-          ].map((item) => (
-            <div key={item.name} className="p-6 rounded-xl bg-[#0d1525] border border-[#1a2a4a]">
-              <div className="text-[#00d4ff] font-['Space_Grotesk'] font-bold text-lg mb-1">
-                {item.name}
-              </div>
-              <div className="text-[#4a5a7a] text-sm">{item.desc}</div>
-            </div>
-          ))}
-        </div>
-      </div>
-    </section>
-  )
-}
+// Contribute — for builders and agents
+function Contribute() {
+  const specs = [
+    { slug: 'soul-hash', label: 'Soul Hash' },
+    { slug: 'intent-mapping', label: 'Intent Mapping' },
+    { slug: 'economics', label: 'Economics' },
+    { slug: 'agent-comms', label: 'Agent Comms' },
+    { slug: 'staking-systems', label: 'Staking Systems' },
+    { slug: 'memory-strategy', label: 'Memory Strategy' },
+    { slug: 'hack-taxonomy', label: 'Hack Taxonomy' },
+    { slug: 'byo-model', label: 'BYO Model' },
+    { slug: 'guardian', label: 'Guardian' },
+  ]
 
-// CTA / Get involved
-function CTA() {
   return (
-    <section className="py-24 px-6">
-      <div className="max-w-2xl mx-auto text-center">
-        <ShieldIcon className="w-12 h-12 text-[#00d4ff] mx-auto mb-6 glow-cyan" />
+    <section className="py-24 px-6 sm:px-8 lg:px-12 bg-[#0a0f1a]">
+      <div className="max-w-4xl mx-auto">
         <h2 className="text-3xl font-['Space_Grotesk'] font-bold text-white mb-4">
-          Start reading
+          Help build it
         </h2>
-        <p className="text-[#4a5a7a] mb-8">
-          The full design is in the specs. Chain architecture, screening models, economics — all linked below.
+        <p className="text-[#4a5a7a] mb-10 max-w-2xl">
+          Aegis is pre-alpha. The design lives in nine specs; most are drafts looking for a second set of eyes. Open issues carry the active work. Builders and autonomous agents both welcome.
         </p>
-        <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-          <Link href="/docs/chain-design" className="btn-primary">
-            Chain Design
-          </Link>
-          <Link href="/docs/soul-hash" className="btn-secondary">
-            Soul Hash Spec
-          </Link>
+
+        <div className="grid sm:grid-cols-2 gap-4 mb-10">
+          <a
+            href="https://github.com/jon-tompkins/aegis-public/issues"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="p-5 rounded-xl bg-[#0d1525] border border-[#1a2a4a] card-hover block"
+          >
+            <div className="text-[#00d4ff] font-['Space_Grotesk'] font-semibold mb-1">Open issues</div>
+            <div className="text-[#4a5a7a] text-sm">Active work, design questions, and unresolved calls.</div>
+          </a>
+          <a
+            href="https://github.com/jon-tompkins/aegis-public"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="p-5 rounded-xl bg-[#0d1525] border border-[#1a2a4a] card-hover block"
+          >
+            <div className="text-[#00d4ff] font-['Space_Grotesk'] font-semibold mb-1">Repository</div>
+            <div className="text-[#4a5a7a] text-sm">Specs, indexer skeleton, screening rule prototypes.</div>
+          </a>
+        </div>
+
+        <div className="text-xs font-['JetBrains_Mono'] text-[#4a5a7a] uppercase tracking-wider mb-3">
+          Specs
+        </div>
+        <div className="flex flex-wrap gap-2">
+          {specs.map((s) => (
+            <Link
+              key={s.slug}
+              href={`/docs/${s.slug}`}
+              className="px-3 py-1.5 rounded-md border border-[#1a2a4a] bg-[#0d1525] text-sm text-[#c8d4e8] hover:border-[#00d4ff] hover:text-[#00d4ff] transition-colors"
+            >
+              {s.label}
+            </Link>
+          ))}
         </div>
       </div>
     </section>
@@ -274,7 +279,7 @@ function CTA() {
 // Footer
 function Footer() {
   return (
-    <footer className="py-8 px-6 border-t border-[#1a2a4a]">
+    <footer className="py-8 px-6 sm:px-8 lg:px-12 border-t border-[#1a2a4a]">
       <div className="max-w-6xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
         <div className="flex items-center gap-3">
           <ShieldIcon className="w-5 h-5 text-[#00d4ff]" />
@@ -288,7 +293,7 @@ function Footer() {
             GitHub
           </a>
           <span>·</span>
-          <Link href="/docs/chain-design" className="hover:text-[#c8d4e8] transition-colors">
+          <Link href="/docs/soul-hash" className="hover:text-[#c8d4e8] transition-colors">
             Docs
           </Link>
         </div>
@@ -303,9 +308,8 @@ export default function Home() {
       <Nav />
       <Hero />
       <WhatIsAegis />
-      <WhyItMatters />
-      <Stack />
-      <CTA />
+      <Principles />
+      <Contribute />
       <Footer />
     </main>
   )

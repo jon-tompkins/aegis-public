@@ -5,12 +5,10 @@ import { usePathname } from 'next/navigation'
 import ShieldIcon from '../components/ShieldIcon'
 
 const navItems = [
-  { href: '/docs/chain-design', label: 'Chain Design' },
   { href: '/docs/soul-hash', label: 'Soul Hash' },
   { href: '/docs/intent-mapping', label: 'Intent Mapping' },
   { href: '/docs/agent-comms', label: 'Agent Comms' },
   { href: '/docs/guardian', label: 'Guardian' },
-  { href: '/docs/training-pipeline', label: 'Training Pipeline' },
   { href: '/docs/hack-taxonomy', label: 'Hack Taxonomy' },
   { href: '/docs/byo-model', label: 'BYO Model' },
   { href: '/docs/memory-strategy', label: 'Memory Strategy' },
@@ -21,7 +19,7 @@ const navItems = [
 function Nav() {
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 border-b border-[#1a2a4a] bg-[#050810]/90 backdrop-blur-md">
-      <div className="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
+      <div className="max-w-6xl mx-auto px-6 sm:px-8 lg:px-12 h-16 flex items-center justify-between">
         <Link href="/" className="flex items-center gap-3">
           <ShieldIcon className="w-6 h-6 text-[#00d4ff]" />
           <span className="font-['Space_Grotesk'] font-bold text-white">Aegis</span>
@@ -84,7 +82,7 @@ export default function DocsLayout({
     <div className="min-h-screen bg-[#050810]">
       <Nav />
       <div className="pt-16">
-        <div className="max-w-6xl mx-auto px-6 py-12 flex gap-12">
+        <div className="max-w-6xl mx-auto px-6 sm:px-8 lg:px-12 py-12 flex gap-12">
           <Sidebar current={pathname} />
           <article className="flex-1 min-w-0 max-w-3xl">
             {children}
