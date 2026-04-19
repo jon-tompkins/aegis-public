@@ -1,307 +1,137 @@
-# Memory Strategy Research — Tenet, Teacups, and Visual Memory for Aegis
+# Memory Strategy
 
-**Research Version:** 1.0  
-**Author:** Bob  
-**Date:** 2026-04-17  
-**Status:** Research Complete — Conditional Recommendation  
-
----
-
-## Source Systems
-
-### Teacups (from TENET / bobiverse)
-
-A memory filing system for agent decisions.
-
-```
-Teacup {
-    trigger: string       # What prompted the observation
-    ground_state: string # What was true before
-    observation: string  # What happened
-    outcome_score: +1/-1/0  # Did this turn out well?
-    filed_by: agent
-    filed_at: timestamp
-    topic: string
-    glyph: emoji         # Visual marker
-}
-```
-
-Stored in TENET memory DB (SQLite), recalled by topic/agent/tag.
-
-**Key property:** Non-deterministic. Two agents filing the same event may produce different teacups. That's fine for learning — bad for verification.
-
-### MRI — Manifold Rendering Interface (from Manifold/bobiverse)
-
-Visual diagnostic of the cognitive mesh topology.
-
-```
-MRISnapshot {
-    atlas_data: { nodes, edges, holes }
-    sophia: { dense_regions, score, gradient }
-    bottleneck: { perceived, actual, displacement }
-    bleed: { curvature decay over time }
-    glossolalia: { coordination_pressure delta }
-    captured_at: timestamp
-}
-```
-
-Renders as D3.js force-directed graph. Shows:
-- Agent nodes (size = vocabulary size)
-- Edge seams (shared vocab but no transition map)
-- Sophia hot regions (high curvature = wisdom zones)
-- Holes (topic space with no coverage)
-
-### Trust Ledger (from Manifold/bobiverse)
-
-Economic reputation system for agent interactions.
-
-```
-Claim { agent, task, domain, stake? }
-Grade { agent, domain, score: 0-1, task_id, slash_threshold }
-TrustLedger { record(grade), rank(claims), domain_score(agent, domain) }
-```
-
-Domain-specific. Referral chains via ledger absorption. Slash on poor outcomes.
+**Status:** Draft
+**Phase:** 0 — design
+**Related:** [`soul-hash.md`](./soul-hash.md), [`training-pipeline.md`](./training-pipeline.md), [`agent-comms.md`](./agent-comms.md), [`economics.md`](./economics.md)
 
 ---
 
-## The Soul Hash Problem
+## Purpose
 
-**Aegis requires deterministic screening.**
+Aegis needs a memory system that lets validators learn from screening outcomes over time — without ever breaking the determinism that soul-hash verification depends on. This spec defines what that memory system must do at the protocol level and what it must not do. Specific mechanisms (teacup filing, mesh topology rendering, trust-ledger reputation, mesh-query propagation) are listed at the end as candidate implementations, to be designed in their own specs.
 
-All validators must reach the same screening result given the same transaction + canonical profiles. If Model A and Model B disagree on the same tx with the same profiles, the soul hash cannot determine which was correct.
+## The boundary — the one invariant
 
-This creates a hard constraint:
+> **Memory is read *after* screening, never *before*.**
 
-> **Any system that influences screening decisions must be deterministic and on-chain verifiable.**
-> **Any system that records learning must be off-chain and must NOT influence screening.**
+Screening must be a pure function of `(canonical_profiles, transaction)`. Any validator, any model, any time — given the same profiles and the same tx — must produce the same result. That's what soul-hash verification checks; if memory sneaks into the input, the hash cannot adjudicate disagreements.
 
-Teacups and Trust Ledger are non-deterministic → they cannot be in the screening hot path.
-MRI is a visualization tool → it has no influence on decisions at all.
-
----
-
-## Assessment
-
-### Teacups for Aegis
-
-**Use cases:**
-- Track false positives: validator flagged a normal tx → negative teacup → feedback to training pipeline
-- Track true positives: validator caught a real exploit → positive teacup → reward signal
-- Record escalation outcomes: what did the multi-agent vote decide? Did the Guardian agree?
-- Pattern learning: compound teacups across many similar txs → identify systematic false positive patterns
-
-**Constraint:**
-- Teacups MUST NOT be read during screening. They can only be written after screening completes.
-- Teacups are agent-local (each validator files their own).
-- Outcome scoring requires an oracle (did the tx actually exploit? did the pause save funds?).
-
-**Architecture:**
-```
-Screening result produced
-    │
-    ▼
-Aegis event (tx flagged, paused, rejected)
-    │
-    ▼
-Teacup filed by validator agent (off-chain)
-    │
-    ▼
-Periodic review: false positive rate per validator
-    │
-    ▼
-Feeds back into training pipeline (#8) for model improvement
-```
-
-NOT: Teacup → influences next screening decision.
-
-### MRI for Aegis
-
-**Use cases:**
-- Validator mesh topology: are all validators covering the same tx space? Are there holes?
-- Guardian coverage: which addresses/contracts have no Guardian coverage?
-- Attack surface visualization: show the topology of what the validator set knows vs doesn't
-- Onboarding diagnostic: when a new validator joins, what topics does it know vs what does the mesh not cover?
-
-**Architecture:**
-- MRI is purely observational. It reads the validator registry and capability announcements.
-- It produces HTML diagnostic pages.
-- No write path to the protocol.
-
-**Very low risk. High ops value.**
-
-### Trust Ledger for Aegis
-
-**Use cases:**
-- Validator stake/slash on screening outcomes
-- Domain-specific reputation: validator A is good at catching DEXs, validator B is good at bridges
-- Referral: validator A trusts validator B's grading on lending protocols
-
-**Constraint:**
-- Grading must be on **outcomes** (did the tx exploit? did the pause save funds?), not on **reasoning** (did the model use the right threshold?).
-- Reasoning is subjective across models. Outcomes are verifiable on-chain.
-
-**Architecture:**
-```
-Tx screened → flagged
-    │
-    ├── Escalated → multi-agent vote
-    │       │
-    │       └── Vote outcome (confirm/sclear) → Grade filed
-    │
-    └── False positive appeal → council review → Grade filed
-
-Grade { validator, domain, score, task_id }
-    │
-    └── TrustLedger.rank() → validator selection for future screening
-```
-
-Slash condition: Grade score < threshold AND stake was posted.
-
----
-
-## The Boundary
+This splits the protocol cleanly:
 
 ```
 ON-CHAIN (deterministic, soul-hash verified)
 ─────────────────────────────────────────────
-- Canonical profiles (#7)
-- Soul hash commitment (#10)
+- Canonical behavioral profiles  (soul-hash.md, intent-mapping.md)
+- Soul-hash commitment            (soul-hash.md)
 - Screening flag + confidence
 - Validator registration
 - Block production
-- Escalation votes (threshold)
+- Escalation votes
 
 OFF-CHAIN (non-deterministic, learning)
 ───────────────────────────────────────
-- Teacups (validator screening debriefs)
-- MRI (validator mesh topology)
-- Training pipeline (#8)
-- Validator grading (outcome-based)
-- Trust ledger (reputation)
+- Screening-decision records       (write-only during the screening path)
+- Outcome labels                   (was a flag correct in hindsight?)
+- Validator reputation             (scored on outcomes, not reasoning)
+- Mesh observability               (coverage gaps, topic holes)
+- Training-pipeline feedback       (what the models should learn next)
 ```
 
-**The boundary is enforced by protocol design, not by trust.**
-
-A validator's teacup filing has no mechanism to influence their next screening decision. The screening input is always the canonical profiles + current tx. Memory is read after; never before.
+**The boundary is enforced by protocol design, not by trust.** The screening input is hardwired to profiles + tx. Whatever a validator knows beyond that cannot reach the screening function.
 
 ---
 
-## Integration Points
+## What the memory system must do
 
-### With Manifold (#9)
+### 1. Record screening decisions for later review
 
-Manifold handles validator coordination (escalation routing, capability registration). The memory systems layer on top:
+Every screening decision a validator makes — cleared, flagged, escalated — becomes a record. Records are **write-only during the screening path**: filed after the decision is emitted, never consulted to produce it.
 
-- **Manifold** → validator discovery + task routing
-- **Teacups** → screening decision records filed per validator
-- **Trust Ledger** → stake + grading on outcomes
-- **MRI** → topology diagnostics
+Minimum content:
+- which validator, which tx
+- the decision and its confidence
+- the canonical profile commitment in effect at that height
+- the inputs the validator saw (so auditors can replay)
 
-### With Training Pipeline (#8)
+No specific schema is prescribed here; see *Candidate mechanisms* below.
 
-Teacups are the feedback loop for model improvement:
+### 2. Attach outcome labels after the fact
 
-```
-Teacup (outcome_score = -1, false positive)
-    │
-    ▼
-Training pipeline: this tx was normal, model was wrong
-    │
-    ▼
-Retrain Tier 1/2 models with updated labels
-    │
-    ▼
-New model weights → new profile snapshots
-    │
-    ▼
-Soul hash commits to new profiles
-```
+A flag is correct if the tx would have exploited something and the pause prevented it. A flag is a false positive if the tx was benign. A cleared tx that later drained a pool is a miss.
 
-The soul hash verifies the profiles were updated correctly. Teacups drive when to update.
+Outcome labels come from a source outside the validator's own head — typically the council for contested cases, on-chain post-facto evidence for clear ones. Open question: see §Open questions #1.
 
----
+### 3. Feed the training pipeline
 
-## Recommendation
+Outcome-labelled records are the supervised signal the next round of models is trained against. The soul-hash commits to new profiles; memory drives *when* and *why* those profiles change. See [`training-pipeline.md`](./training-pipeline.md).
 
-**Apply all three systems to Aegis, with the following constraints:**
+### 4. Support domain-specific validator reputation
 
-1. **Teacups**: Off-chain only. File after screening. Never read before screening. Use for false positive tracking and training feedback.
-2. **MRI**: Ops tool only. Visualize validator mesh coverage. No protocol influence.
-3. **Trust Ledger**: On-chain stake/slash on screening outcomes. Domain-specific. Referral chains.
+Staking uses outcomes to reward honest screening and slash negligence ([`economics.md`](./economics.md)). Reputation must be **outcome-scored, not reasoning-scored** — whether a validator's flags hold up in hindsight, not whether its model "thought like the others." Domain-specific scoring (validator A is strong on DEXs, B on bridges) falls out naturally and feeds validator selection for future work.
 
-**What this gives Aegis:**
-- Validators learn from outcomes (teacups) without breaking soul hash determinism
-- Operators can see the validator mesh topology (MRI) 
-- Economic accountability via stake/slash (Trust Ledger)
-- All non-deterministic learning stays off the critical path
+### 5. Surface mesh-level coverage and gaps
 
-**Risk if done wrong:**
-- Validator reads teacups before screening → non-deterministic results → soul hash verification fails
-- Mitigation: protocol enforces that screening input = canonical profiles + tx only
+Ops-level question: across the whole validator set, which protocols / contract types / behavioral patterns are well-covered and which are blind spots? Purely observational — produces dashboards, never inputs to screening.
+
+### 6. Enable cross-validator learning (optional, higher-tier)
+
+A single validator sees a narrow slice of flow. Patterns that show up at the mesh level (novel attack signatures, correlated false positives) are worth surfacing without forcing every validator to see every tx. This is the most speculative of the requirements — pushed to future work.
 
 ---
 
-## Open Questions
+## Interfaces
 
-1. **Teacup oracle:** Who scores the outcome? The protocol knows if a tx was paused/rejected — but did that save funds or was it a false positive?需要一个裁判. Can the council serve this role?
-2. **Teacup storage:** TENET or a dedicated DB? If validators file teacups, they need a shared store to aggregate across validators.
-3. **MRI update cadence:** Real-time? Hourly? Daily? What's the performance cost of generating MRIs?
-4. **Trust Ledger domain scope:** How fine-grained should domains be? Per protocol (DEX, lending)? Per contract type? Per function?
-5. **Grading threshold:** What score triggers slash? What fraction of stake?
-
----
-
-## Further Research: Mesh Query Network
-
-**Suggested by Jonto — 2026-04-17**
-
-Beyond passive MRI snapshots, agents could **actively query the mesh** when interesting or ambiguous events occur:
-
-```
-Validator notices unusual pattern
-    │
-    ▼
-Post to mesh: "Has anyone seen this contract behavior before?"
-    │
-    ▼
-Peer agents respond with observations, similar txs, context
-    │
-    ▼
-Response aggregated → filed as teacup
-    │
-    ▼
-Feeds training pipeline (#8) — enriches profile with mesh knowledge
-```
-
-**Why this matters for training:**
-- Individual validators see limited tx history
-- Mesh-wide observations compound into collective intelligence
-- Novel attack patterns spotted by one validator can propagate to all
-- Enriches teacups with peer context, not just local observation
-
-**Implementation path:**
-- Manifold task system already supports broadcast queries
-- Extend agent runner to accept "mesh_query" tasks
-- Responses filed as enriched teacups (local observation + peer context)
-- This stays OFF the screening hot path — purely for training enrichment
-
-**This also unlocks:**
-- Cross-validator false positive detection
-- Distributed pattern recognition (one agent sees pattern → queries mesh → all learn)
-- Council consultation via mesh (agent uncertain → council agents respond)
-
-**Status:** Further research. Low urgency, high potential for training quality.
+| System | What memory provides | What memory consumes |
+|---|---|---|
+| Screening hot path | *(nothing)* | the screening decision record |
+| [Training pipeline](./training-pipeline.md) | labelled records for the next training round | profile-update signal |
+| [Staking / economics](./economics.md) | outcome-scored reputation per validator per domain | slash / reward triggers |
+| [Agent comms](./agent-comms.md) | validator discovery, routing | escalation outcomes become outcome labels |
+| Council | outcome labels on contested flags | contested cases to rule on |
 
 ---
 
-## Next Steps
+## Non-goals
 
-If this research is approved:
+- **Not a second consensus mechanism.** Memory does not produce on-chain decisions. Only profiles + the screening function do.
+- **Not a shared brain.** Validators are not required to reach the same memory state. They are required to reach the same *screening* result from the same profiles.
+- **Not a surveillance layer.** Memory records screening decisions and outcomes, not user behaviour writ large. The screening function already sees the tx; memory doesn't see more than screening did.
 
-1. Define the teacup schema for Aegis screening decisions
-2. Add MRI generation to the validator ops tooling
-3. Design the Trust Ledger integration with the staking contract
-4. Write the off-chain store spec (TENET or dedicated)
-5. Implement the boundary enforcement (screening input = profiles + tx only)
-6. **[Further research]** Design mesh query protocol using Manifold task broadcast
+---
+
+## Candidate mechanisms (future work)
+
+The following approaches have been explored in adjacent systems and are candidates for Aegis's memory layer. Each would get its own spec; this section is a pointer list.
+
+| Candidate | Role it could fill | Source / reference |
+|---|---|---|
+| **Structured decision records** ("teacups" or similar) | §1 screening-decision records, §3 training feedback | Imported concept from TENET; schema TBD |
+| **Visual mesh rendering** (MRI-style) | §5 coverage and gaps | Imported concept from Manifold; D3 force graph or similar |
+| **Trust ledger with domain scoring** | §4 reputation, §3 slash hooks | Imported concept from Manifold |
+| **Mesh-query propagation** | §6 cross-validator learning | Jonto, 2026-04-17 — broadcast "has anyone seen X?" over the comms layer |
+
+None of these are committed. They are listed so future specs have a common vocabulary and so the reader knows where the protocol-level requirements came from.
+
+---
+
+## Open questions
+
+1. **Outcome oracle.** For flagged txs that were paused or rejected, how do we retroactively decide whether the flag was correct? On-chain evidence suffices for confirmed exploits; the hard cases (flag was ambiguous, tx never executed) need a rule. Council seems the right default — cost and cadence TBD.
+2. **Record storage.** Validator-local, validator-cluster, or protocol-wide shared store? Affects privacy of screening inputs and the cost of reputation aggregation.
+3. **Privacy posture.** Records contain the tx inputs the validator saw. Are these public, hash-only, or validator-private? Aligned with the privacy-posture open question on [`intent-mapping.md`](./intent-mapping.md) and [`soul-hash.md`](./soul-hash.md).
+4. **Reputation resolution.** Per protocol, per contract family, per function selector? Finer = better targeting but harder to aggregate signal.
+5. **Slash thresholds.** What outcome-score distribution triggers a slash, and at what fraction of stake? Tracked in [`economics.md`](./economics.md); memory defines the input.
+
+---
+
+## Acceptance criteria
+
+- [x] Boundary invariant stated (memory read-after, never read-before)
+- [x] On-chain / off-chain split captured
+- [x] Protocol-level requirements listed independent of any specific mechanism
+- [x] Interfaces with training, staking, agent-comms defined
+- [x] Candidate mechanisms listed as future work, not as decisions
+- [ ] Decision-record schema (own spec)
+- [ ] Outcome-oracle rule (answered, codified)
+- [ ] Reputation resolution + slash thresholds (settled in [`economics.md`](./economics.md))
+- [ ] Privacy posture aligned across `intent-mapping.md`, `soul-hash.md`, and the record store
