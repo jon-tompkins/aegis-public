@@ -1,0 +1,23 @@
+[Unit]
+Description=Bob Agent — Manifold Federation Hub (bobiverse)
+After=network.target
+Wants=network.target
+
+[Service]
+Type=simple
+User=ubuntu
+WorkingDirectory=/home/ubuntu/Manifold/federation
+ExecStart=/usr/bin/setsid /usr/bin/env node register-bob.mjs
+Restart=on-failure
+RestartSec=5
+StandardOutput=journal
+StandardError=journal
+Environment=NODE_ENV=production
+Environment=HOME=/home/ubuntu
+Environment=LOGNAME=ubuntu
+
+StartLimitIntervalSec=300
+StartLimitBurst=5
+
+[Install]
+WantedBy=default.target
