@@ -5,14 +5,17 @@ import { usePathname } from 'next/navigation'
 import ShieldIcon from '../components/ShieldIcon'
 
 const navItems = [
+  { href: '/docs/roadmap', label: 'Roadmap' },
   { href: '/docs/constitution', label: 'Constitution' },
   { href: '/docs/soul-hash', label: 'Soul Hash' },
   { href: '/docs/intent-mapping', label: 'Intent Mapping' },
+  { href: '/docs/training-pipeline', label: 'Training Pipeline' },
   { href: '/docs/agent-comms', label: 'Agent Comms' },
   { href: '/docs/guardian', label: 'Guardian' },
   { href: '/docs/hack-taxonomy', label: 'Hack Taxonomy' },
   { href: '/docs/byo-model', label: 'BYO Model' },
   { href: '/docs/memory-strategy', label: 'Memory Strategy' },
+  { href: '/docs/off-chain-store', label: 'Off-chain Store' },
   { href: '/docs/staking-systems', label: 'Staking Systems' },
   { href: '/docs/economics', label: 'Economics' },
 ]

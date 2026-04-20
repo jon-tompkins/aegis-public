@@ -190,31 +190,198 @@ function Principles() {
   )
 }
 
-// Contribute — for builders and agents
-function Contribute() {
-  const specs = [
-    { slug: 'soul-hash', label: 'Soul Hash' },
-    { slug: 'intent-mapping', label: 'Intent Mapping' },
-    { slug: 'economics', label: 'Economics' },
-    { slug: 'agent-comms', label: 'Agent Comms' },
-    { slug: 'staking-systems', label: 'Staking Systems' },
-    { slug: 'memory-strategy', label: 'Memory Strategy' },
-    { slug: 'hack-taxonomy', label: 'Hack Taxonomy' },
-    { slug: 'byo-model', label: 'BYO Model' },
-    { slug: 'guardian', label: 'Guardian' },
+// Phases — phased roadmap to exit-ready
+type PhaseStatus = 'active' | 'next' | 'queued'
+
+interface Phase {
+  number: string
+  title: string
+  status: PhaseStatus
+  summary: string
+  items: { label: string; slug?: string }[]
+}
+
+function statusLabel(s: PhaseStatus): { text: string; className: string } {
+  switch (s) {
+    case 'active':
+      return { text: 'In flight', className: 'text-[#00cc88] bg-[#00cc88]/10 border-[#00cc88]/30' }
+    case 'next':
+      return { text: 'Next', className: 'text-[#00d4ff] bg-[#00d4ff]/10 border-[#00d4ff]/30' }
+    case 'queued':
+      return { text: 'Queued', className: 'text-[#4a5a7a] bg-[#0d1525] border-[#1a2a4a]' }
+  }
+}
+
+function Phases() {
+  const phases: Phase[] = [
+    {
+      number: '0',
+      title: 'Scoping & design',
+      status: 'active',
+      summary: 'Every major call written down. Core specs drafted; decisions tracked per-issue.',
+      items: [
+        { label: 'Intent mapping', slug: 'intent-mapping' },
+        { label: 'Soul hash', slug: 'soul-hash' },
+        { label: 'Training pipeline', slug: 'training-pipeline' },
+        { label: 'BYO model', slug: 'byo-model' },
+        { label: 'Agent comms', slug: 'agent-comms' },
+        { label: 'Economics', slug: 'economics' },
+        { label: 'Staking systems', slug: 'staking-systems' },
+        { label: 'Hack taxonomy', slug: 'hack-taxonomy' },
+        { label: 'Memory strategy', slug: 'memory-strategy' },
+        { label: 'Off-chain store', slug: 'off-chain-store' },
+        { label: 'Guardian (deferred)', slug: 'guardian' },
+      ],
+    },
+    {
+      number: '1',
+      title: 'Buildable MVP',
+      status: 'next',
+      summary: '3-validator local testbed screening historical Ethereum data. Tier 1 rules in Rust. Exploit replay reports recall + false-positive rates.',
+      items: [
+        { label: 'Indexer + RPC wiring' },
+        { label: 'Port T1 rules Python → Rust' },
+        { label: 'Backtest harness' },
+        { label: 'Local dev setup spec' },
+        { label: 'OP Stack fork plan' },
+      ],
+    },
+    {
+      number: '2',
+      title: 'Public testnet',
+      status: 'queued',
+      summary: 'Public testnet with Ethereum bridge, team-operated validators, wallet SDK skeleton. First external dev bridges in and catches a flagged tx.',
+      items: [
+        { label: 'Bridge + faucet' },
+        { label: 'Validator operator guide' },
+        { label: 'Observability + metrics' },
+        { label: 'Wallet SDK (advisory + EIP-4337)' },
+      ],
+    },
+    {
+      number: '3',
+      title: 'Mainnet + real TVL',
+      status: 'queued',
+      summary: 'AEGIS token (stake + governance only, gas stays ETH). Native DeFi primitives live. Slashing on, council constituted. Formal audits.',
+      items: [
+        { label: 'Mainnet launch plan' },
+        { label: 'AEGIS token spec' },
+        { label: 'Governance' },
+        { label: 'Incident response' },
+        { label: 'Audits' },
+      ],
+    },
+    {
+      number: '4',
+      title: 'Ecosystem + proof',
+      status: 'queued',
+      summary: 'Wallets and protocols pick Aegis because the numbers prove it out. Public quarterly reports on exploits prevented.',
+      items: [
+        { label: 'Wallet integrations' },
+        { label: 'Protocol-level attestations' },
+        { label: 'Public metrics' },
+        { label: 'Contributor program' },
+      ],
+    },
+    {
+      number: '5',
+      title: 'Labs + exit-readiness',
+      status: 'queued',
+      summary: 'Aegis Labs stands up. License split formalized: MIT chain + screener reference, proprietary model weights. Token governance scoped narrowly. Chain keeps running whatever happens to the company.',
+      items: [
+        { label: 'Labs charter' },
+        { label: 'Governance scope' },
+        { label: 'Acquisition-readiness' },
+      ],
+    },
   ]
 
   return (
     <section className="py-24 px-6 sm:px-8 lg:px-12 bg-[#0a0f1a]">
+      <div className="max-w-5xl mx-auto">
+        <div className="flex items-end justify-between mb-4 flex-wrap gap-4">
+          <h2 className="text-3xl font-['Space_Grotesk'] font-bold text-white">
+            How we're building it
+          </h2>
+          <Link
+            href="/docs/roadmap"
+            className="text-sm text-[#00d4ff] hover:text-[#c8d4e8] transition-colors font-['JetBrains_Mono']"
+          >
+            Full roadmap →
+          </Link>
+        </div>
+        <p className="text-[#4a5a7a] mb-12 max-w-2xl">
+          Six phases from specs-on-paper to acquisition-ready. Phase boundaries are movable — the point is to separate what we know from what we've built from what someone is using.
+        </p>
+
+        <div className="space-y-4">
+          {phases.map((p) => {
+            const status = statusLabel(p.status)
+            return (
+              <div
+                key={p.number}
+                className="p-6 rounded-xl bg-[#0d1525] border border-[#1a2a4a] card-hover"
+              >
+                <div className="flex items-start gap-6 flex-wrap">
+                  <div className="shrink-0 w-12 h-12 rounded-lg border border-[#1a2a4a] bg-[#050810] flex items-center justify-center font-['Space_Grotesk'] font-bold text-xl text-[#00d4ff]">
+                    {p.number}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-3 mb-2 flex-wrap">
+                      <h3 className="text-lg font-['Space_Grotesk'] font-semibold text-white">
+                        {p.title}
+                      </h3>
+                      <span className={`text-xs font-['JetBrains_Mono'] px-2 py-0.5 rounded border ${status.className}`}>
+                        {status.text}
+                      </span>
+                    </div>
+                    <p className="text-[#4a5a7a] text-sm mb-4 leading-relaxed">
+                      {p.summary}
+                    </p>
+                    <div className="flex flex-wrap gap-2">
+                      {p.items.map((it) =>
+                        it.slug ? (
+                          <Link
+                            key={it.label}
+                            href={`/docs/${it.slug}`}
+                            className="px-2.5 py-1 rounded-md border border-[#1a2a4a] bg-[#050810] text-xs text-[#c8d4e8] hover:border-[#00d4ff] hover:text-[#00d4ff] transition-colors"
+                          >
+                            {it.label}
+                          </Link>
+                        ) : (
+                          <span
+                            key={it.label}
+                            className="px-2.5 py-1 rounded-md border border-[#1a2a4a] bg-[#050810] text-xs text-[#4a5a7a]"
+                          >
+                            {it.label}
+                          </span>
+                        ),
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )
+          })}
+        </div>
+      </div>
+    </section>
+  )
+}
+
+// Contribute — GitHub entry points
+function Contribute() {
+  return (
+    <section className="py-24 px-6 sm:px-8 lg:px-12">
       <div className="max-w-4xl mx-auto">
         <h2 className="text-3xl font-['Space_Grotesk'] font-bold text-white mb-4">
           Help build it
         </h2>
         <p className="text-[#4a5a7a] mb-10 max-w-2xl">
-          Aegis is pre-alpha. The design lives in nine specs; most are drafts looking for a second set of eyes. Open issues carry the active work. Builders and autonomous agents both welcome.
+          Aegis is pre-alpha. Active work is issue-tagged and open to contribution — builders and autonomous agents both welcome.
         </p>
 
-        <div className="grid sm:grid-cols-2 gap-4 mb-10">
+        <div className="grid sm:grid-cols-2 gap-4">
           <a
             href="https://github.com/jon-tompkins/aegis-public/issues"
             target="_blank"
@@ -222,7 +389,7 @@ function Contribute() {
             className="p-5 rounded-xl bg-[#0d1525] border border-[#1a2a4a] card-hover block"
           >
             <div className="text-[#00d4ff] font-['Space_Grotesk'] font-semibold mb-1">Open issues</div>
-            <div className="text-[#4a5a7a] text-sm">Active work, design questions, and unresolved calls.</div>
+            <div className="text-[#4a5a7a] text-sm">Active work, design questions, unresolved calls.</div>
           </a>
           <a
             href="https://github.com/jon-tompkins/aegis-public"
@@ -233,21 +400,6 @@ function Contribute() {
             <div className="text-[#00d4ff] font-['Space_Grotesk'] font-semibold mb-1">Repository</div>
             <div className="text-[#4a5a7a] text-sm">Specs, indexer skeleton, screening rule prototypes.</div>
           </a>
-        </div>
-
-        <div className="text-xs font-['JetBrains_Mono'] text-[#4a5a7a] uppercase tracking-wider mb-3">
-          Specs
-        </div>
-        <div className="flex flex-wrap gap-2">
-          {specs.map((s) => (
-            <Link
-              key={s.slug}
-              href={`/docs/${s.slug}`}
-              className="px-3 py-1.5 rounded-md border border-[#1a2a4a] bg-[#0d1525] text-sm text-[#c8d4e8] hover:border-[#00d4ff] hover:text-[#00d4ff] transition-colors"
-            >
-              {s.label}
-            </Link>
-          ))}
         </div>
       </div>
     </section>
@@ -291,6 +443,7 @@ export default function Home() {
       <Hero />
       <WhatIsAegis />
       <Principles />
+      <Phases />
       <Contribute />
       <Footer />
     </main>

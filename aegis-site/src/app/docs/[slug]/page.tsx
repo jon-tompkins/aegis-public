@@ -6,14 +6,17 @@ import { notFound } from 'next/navigation'
 const SPECS_PATH = path.join(process.cwd(), 'src/app/docs/specs')
 
 const docSlugs: Record<string, string> = {
+  'roadmap': 'roadmap.md',
   'constitution': 'constitution.md',
   'soul-hash': 'soul-hash.md',
   'intent-mapping': 'intent-mapping.md',
+  'training-pipeline': 'training-pipeline.md',
   'agent-comms': 'agent-comms.md',
   'guardian': 'guardian.md',
   'hack-taxonomy': 'hack-taxonomy.md',
   'byo-model': 'byo-model.md',
   'memory-strategy': 'memory-strategy.md',
+  'off-chain-store': 'off-chain-store.md',
   'staking-systems': 'staking-systems.md',
   'economics': 'economics.md',
 }
