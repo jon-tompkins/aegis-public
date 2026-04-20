@@ -6,6 +6,7 @@ import { notFound } from 'next/navigation'
 const SPECS_PATH = path.join(process.cwd(), 'src/app/docs/specs')
 
 const docSlugs: Record<string, string> = {
+  'constitution': 'constitution.md',
   'soul-hash': 'soul-hash.md',
   'intent-mapping': 'intent-mapping.md',
   'agent-comms': 'agent-comms.md',

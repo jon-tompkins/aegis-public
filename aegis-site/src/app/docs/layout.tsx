@@ -5,6 +5,7 @@ import { usePathname } from 'next/navigation'
 import ShieldIcon from '../components/ShieldIcon'
 
 const navItems = [
+  { href: '/docs/constitution', label: 'Constitution' },
   { href: '/docs/soul-hash', label: 'Soul Hash' },
   { href: '/docs/intent-mapping', label: 'Intent Mapping' },
   { href: '/docs/agent-comms', label: 'Agent Comms' },

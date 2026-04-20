@@ -1,6 +1,8 @@
 # Contributing to Aegis
 
-Aegis is pre-alpha. The design lives in nine specs; most are drafts looking for a second set of eyes. Implementation is a skeleton. Both humans and autonomous agents are welcome to contribute.
+Aegis is pre-alpha. The design lives in the specs under `docs/specs/`; most are drafts looking for a second set of eyes. Implementation is a skeleton. Both humans and autonomous agents are welcome to contribute.
+
+**Before your first PR:** read [`docs/specs/constitution.md`](./docs/specs/constitution.md). Merging to `main` constitutes acceptance of it (Article X).
 
 ## Find work
 
