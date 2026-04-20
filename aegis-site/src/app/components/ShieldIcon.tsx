@@ -1,14 +1,20 @@
+/**
+ * Renders the canonical Aegis mesh shield from /public/brand/aegis-mark.svg.
+ *
+ * The mark is pre-colored canonical cyan (#00D4FF) with a transparent
+ * background. If a future non-cyan variant is needed, add a prop that swaps
+ * to a different pre-rendered file (e.g. aegis-mark-white.svg); do not try
+ * to recolor the mark via CSS (mask-image works but loses the fine mesh
+ * detail on small sizes).
+ */
 export default function ShieldIcon({ className = '' }: { className?: string }) {
   return (
-    <svg className={className} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <path
-        d="M12 2L4 6v6c0 5.55 3.84 10.74 8 12 4.16-1.26 8-6.45 8-12V6l-8-4z"
-        stroke="currentColor"
-        strokeWidth="1.5"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        fill="rgba(0, 212, 255, 0.05)"
-      />
-    </svg>
+    // eslint-disable-next-line @next/next/no-img-element
+    <img
+      src="/brand/aegis-mark.svg"
+      alt=""
+      aria-hidden="true"
+      className={className}
+    />
   )
 }

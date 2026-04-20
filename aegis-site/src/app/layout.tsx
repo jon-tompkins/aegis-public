@@ -6,10 +6,7 @@ export const metadata: Metadata = {
   description: 'Ethereum L2 with AI agent validators that screen every transaction for anomalous behavior and can pause or reject exploits at the chain level.',
   icons: {
     icon: [
-      {
-        url: "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🛡</text></svg>",
-        type: 'image/svg+xml',
-      },
+      { url: '/brand/aegis-mark.svg', type: 'image/svg+xml' },
     ],
   },
 }

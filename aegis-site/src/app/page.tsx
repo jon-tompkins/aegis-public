@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import ShieldIcon from './components/ShieldIcon'
 
 // Animated shield grid SVG component
 function ShieldGrid() {
@@ -28,29 +29,6 @@ function ShieldGrid() {
         <ellipse cx="50%" cy="45%" rx="25%" ry="30%" fill="url(#shieldGlow)" />
       </svg>
     </div>
-  )
-}
-
-// Shield icon
-function ShieldIcon({ className = '' }: { className?: string }) {
-  return (
-    <svg className={className} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <path
-        d="M12 2L4 6v6c0 5.55 3.84 10.74 8 12 4.16-1.26 8-6.45 8-12V6l-8-4z"
-        stroke="currentColor"
-        strokeWidth="1.5"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        fill="rgba(0, 212, 255, 0.05)"
-      />
-      <path
-        d="M9 12l2 2 4-4"
-        stroke="currentColor"
-        strokeWidth="1.5"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
   )
 }
 
