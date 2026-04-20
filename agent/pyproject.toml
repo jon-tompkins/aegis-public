@@ -1,0 +1,26 @@
+[project]
+name = "aegis-monitor-agent"
+version = "0.1.0"
+description = "Aegis monitor agent — Tier 1 screening over the Ethereum mempool"
+requires-python = ">=3.12"
+dependencies = [
+    "fastapi>=0.115",
+    "uvicorn[standard]>=0.32",
+    "websockets>=13",
+    "eth-account>=0.13",
+    "web3>=7.0",
+    "asyncpg>=0.30",
+    "pydantic>=2.9",
+    "python-dotenv>=1.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.3",
+    "pytest-asyncio>=0.24",
+    "ruff>=0.7",
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
