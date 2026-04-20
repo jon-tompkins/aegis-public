@@ -296,6 +296,10 @@ function Footer() {
           <Link href="/docs/soul-hash" className="hover:text-[#c8d4e8] transition-colors">
             Docs
           </Link>
+          <span>·</span>
+          <Link href="/brand" className="hover:text-[#c8d4e8] transition-colors">
+            Brand
+          </Link>
         </div>
       </div>
     </footer>
