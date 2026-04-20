@@ -206,14 +206,31 @@ function LogoSection() {
         </div>
       </div>
 
+      <div className="rounded-xl overflow-hidden border border-[#1a2a4a] bg-[#050810] mb-6 p-12 flex items-center justify-center">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src="/brand/aegis-mark.svg"
+          alt="Aegis mark — isolated shield mesh, canonical cyan"
+          className="h-40 w-auto"
+        />
+      </div>
+
       <div className="grid sm:grid-cols-3 gap-4 mb-6">
         <a
           href="/brand/aegis-logo.svg"
           download
           className="p-4 rounded-xl bg-[#0d1525] border border-[#1a2a4a] hover:border-[#00d4ff] transition-colors"
         >
-          <div className="font-['Space_Grotesk'] font-semibold text-white mb-1">Color — SVG</div>
-          <div className="text-xs font-['JetBrains_Mono'] text-[#4a5a7a]">aegis-logo.svg</div>
+          <div className="font-['Space_Grotesk'] font-semibold text-white mb-1">Full logo — SVG</div>
+          <div className="text-xs font-['JetBrains_Mono'] text-[#4a5a7a]">aegis-logo.svg · color</div>
+        </a>
+        <a
+          href="/brand/aegis-mark.svg"
+          download
+          className="p-4 rounded-xl bg-[#0d1525] border border-[#1a2a4a] hover:border-[#00d4ff] transition-colors"
+        >
+          <div className="font-['Space_Grotesk'] font-semibold text-white mb-1">Mark only — SVG</div>
+          <div className="text-xs font-['JetBrains_Mono'] text-[#4a5a7a]">aegis-mark.svg · shield, transparent bg</div>
         </a>
         <a
           href="/brand/aegis-logo-monochrome.png"
@@ -223,18 +240,11 @@ function LogoSection() {
           <div className="font-['Space_Grotesk'] font-semibold text-white mb-1">Monochrome — PNG</div>
           <div className="text-xs font-['JetBrains_Mono'] text-[#4a5a7a]">aegis-logo-monochrome.png</div>
         </a>
-        <div className="p-4 rounded-xl bg-[#0d1525] border border-[#1a2a4a] opacity-60">
-          <div className="font-['Space_Grotesk'] font-semibold text-white mb-1">Mark only</div>
-          <div className="text-xs font-['JetBrains_Mono'] text-[#4a5a7a]">coming soon — for favicons + nav</div>
-        </div>
       </div>
 
       <div className="text-sm text-[#4a5a7a] space-y-3">
         <p>
-          The mark is a mesh of validator nodes forming a shield silhouette — the defensive role of the protocol, rendered as the mesh that produces it. &quot;Aegis&quot; wordmark is set in Space Grotesk.
-        </p>
-        <p>
-          Current color SVG is a vectorized trace with colors baked slightly off the brand palette (<span className="font-['JetBrains_Mono'] text-[#c8d4e8]">#091931</span> / <span className="font-['JetBrains_Mono'] text-[#c8d4e8]">#21cfee</span> vs. canonical <span className="font-['JetBrains_Mono'] text-[#c8d4e8]">#050810</span> / <span className="font-['JetBrains_Mono'] text-[#c8d4e8]">#00d4ff</span>). A hand-cleaned version and an SVG monochrome are pending.
+          The mark is a mesh of validator nodes forming a shield silhouette — the defensive role of the protocol, rendered as the mesh that produces it. The mark-only SVG uses the canonical <span className="font-['JetBrains_Mono'] text-[#c8d4e8]">#00d4ff</span> on a transparent background — use this for favicons, nav icons, and anywhere the mark appears standalone. The full logo still traces slightly off-palette (<span className="font-['JetBrains_Mono'] text-[#c8d4e8]">#091931</span> / <span className="font-['JetBrains_Mono'] text-[#c8d4e8]">#21cfee</span>); a hand-cleaned version is pending.
         </p>
       </div>
     </Section>
