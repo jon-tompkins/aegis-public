@@ -181,27 +181,51 @@ function NameSection() {
 function LogoSection() {
   return (
     <Section id="logo" eyebrow="02" title="Logo">
-      <div className="rounded-xl overflow-hidden border border-[#1a2a4a] bg-[#091931] mb-6">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          src="/brand/aegis-logo.svg"
-          alt="Aegis logo — a mesh of nodes forming a shield with the wordmark 'Aegis' below"
-          className="w-full h-auto block"
-        />
+      <div className="grid md:grid-cols-2 gap-6 mb-6">
+        <div className="rounded-xl overflow-hidden border border-[#1a2a4a] bg-[#091931]">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src="/brand/aegis-logo.svg"
+            alt="Aegis logo — cyan mesh shield with wordmark on navy"
+            className="w-full h-auto block"
+          />
+          <div className="px-4 py-3 text-xs font-['JetBrains_Mono'] text-[#4a5a7a] border-t border-[#1a2a4a]">
+            Color · primary
+          </div>
+        </div>
+        <div className="rounded-xl overflow-hidden border border-[#1a2a4a] bg-[#050810]">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src="/brand/aegis-logo-monochrome.png"
+            alt="Aegis logo — monochrome variant"
+            className="w-full h-auto block"
+          />
+          <div className="px-4 py-3 text-xs font-['JetBrains_Mono'] text-[#4a5a7a] border-t border-[#1a2a4a]">
+            Monochrome · use on colored backgrounds or single-ink print
+          </div>
+        </div>
       </div>
 
-      <div className="grid md:grid-cols-2 gap-4 mb-6">
+      <div className="grid sm:grid-cols-3 gap-4 mb-6">
         <a
           href="/brand/aegis-logo.svg"
           download
           className="p-4 rounded-xl bg-[#0d1525] border border-[#1a2a4a] hover:border-[#00d4ff] transition-colors"
         >
-          <div className="font-['Space_Grotesk'] font-semibold text-white mb-1">Full logo — SVG</div>
-          <div className="text-xs font-['JetBrains_Mono'] text-[#4a5a7a]">/brand/aegis-logo.svg · dark variant</div>
+          <div className="font-['Space_Grotesk'] font-semibold text-white mb-1">Color — SVG</div>
+          <div className="text-xs font-['JetBrains_Mono'] text-[#4a5a7a]">aegis-logo.svg</div>
+        </a>
+        <a
+          href="/brand/aegis-logo-monochrome.png"
+          download
+          className="p-4 rounded-xl bg-[#0d1525] border border-[#1a2a4a] hover:border-[#00d4ff] transition-colors"
+        >
+          <div className="font-['Space_Grotesk'] font-semibold text-white mb-1">Monochrome — PNG</div>
+          <div className="text-xs font-['JetBrains_Mono'] text-[#4a5a7a]">aegis-logo-monochrome.png</div>
         </a>
         <div className="p-4 rounded-xl bg-[#0d1525] border border-[#1a2a4a] opacity-60">
-          <div className="font-['Space_Grotesk'] font-semibold text-white mb-1">Mark only — SVG</div>
-          <div className="text-xs font-['JetBrains_Mono'] text-[#4a5a7a]">coming soon — mark isolated for favicons + nav use</div>
+          <div className="font-['Space_Grotesk'] font-semibold text-white mb-1">Mark only</div>
+          <div className="text-xs font-['JetBrains_Mono'] text-[#4a5a7a]">coming soon — for favicons + nav</div>
         </div>
       </div>
 
@@ -210,7 +234,7 @@ function LogoSection() {
           The mark is a mesh of validator nodes forming a shield silhouette — the defensive role of the protocol, rendered as the mesh that produces it. &quot;Aegis&quot; wordmark is set in Space Grotesk.
         </p>
         <p>
-          Current SVG is a vectorized trace (colors baked slightly off the brand palette: logo is <span className="font-['JetBrains_Mono'] text-[#c8d4e8]">#091931</span> / <span className="font-['JetBrains_Mono'] text-[#c8d4e8]">#21cfee</span>, canonical tokens are <span className="font-['JetBrains_Mono'] text-[#c8d4e8]">#050810</span> / <span className="font-['JetBrains_Mono'] text-[#c8d4e8]">#00d4ff</span>). A hand-cleaned version and a mark-only variant are pending.
+          Current color SVG is a vectorized trace with colors baked slightly off the brand palette (<span className="font-['JetBrains_Mono'] text-[#c8d4e8]">#091931</span> / <span className="font-['JetBrains_Mono'] text-[#c8d4e8]">#21cfee</span> vs. canonical <span className="font-['JetBrains_Mono'] text-[#c8d4e8]">#050810</span> / <span className="font-['JetBrains_Mono'] text-[#c8d4e8]">#00d4ff</span>). A hand-cleaned version and an SVG monochrome are pending.
         </p>
       </div>
     </Section>
