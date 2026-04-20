@@ -3,7 +3,7 @@
 **Research Version:** 1.0  
 **Author:** Bob  
 **Date:** 2026-04-17  
-**Source:** rekt.news + on-chain data  
+**Source:** rekt.news + on-chain data + [SEAL Intel SDK](https://github.com/security-alliance/seal-intel-sdk)  
 **Status:** Research Complete  
 **Drives:** Aegis Tier 1/2 screening models, exploit backtesting  
 
