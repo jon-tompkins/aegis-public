@@ -33,10 +33,13 @@
   - Validate against the attestation sig requirements (EIP-191) ✅ 132-char 0x-prefixed sig gate + deterministic canonical JSON (sorted keys, no whitespace, UTF-8)
   - Bonus: added `RuleHit` for the internal rule→attestation pipeline; 13 pytest cases in `tests/test_schemas.py` locking in wire format
 
-- [ ] **Set up Postgres + Alembic migrations**
-  - `flags` table: `id, tx_hash, monitored_address, rule_id, rule_version, severity, reason_human, reason_structured (jsonb), agent_id, ts_ms, sig, created_at`
-  - Indexes on `monitored_address`, `tx_hash`, `ts_ms`
-  - Add `alembic` for migrations
+- [x] **Set up Postgres + Alembic migrations** *(Clark)*
+  - `flags` table ✅ all spec columns plus server-default `created_at` timestamptz and `reason_structured` JSONB default `{}`
+  - Indexes on `monitored_address`, `tx_hash`, `ts_ms` ✅ plus composite `(monitored_address, ts_ms)` for recent-flags-per-address queries and `rule_id` for per-rule analytics
+  - Add `alembic` for migrations ✅ `alembic.ini` + `migrations/env.py` (async, reads `DATABASE_URL` at runtime, normalises to `+asyncpg`), `migrations/versions/20260421_0001_initial.py`
+  - Bonus: `monitored_addresses` table with soft-delete (`active` bool + `removed_at`), CHECK constraint on address format, primary key on `address`
+  - Bonus: `src/aegis_monitor/db/session.py` exposing `get_engine()`, `session_scope()`, `dispose_engine()` — async SQLAlchemy 2.0
+  - 9 unit tests in `tests/test_db_models.py` locking the column surface, index coverage, PK, CHECK constraint presence
 
 ### Alchemy WebSocket Subscription
 
