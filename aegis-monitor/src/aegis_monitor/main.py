@@ -25,12 +25,16 @@ from typing import AsyncIterator
 from fastapi import FastAPI
 
 from .address_manager import AddressManager
+from .api import flags as flags_routes
+from .api import ready as ready_routes
 from .api import routes as api_routes
+from .api import stream as stream_routes
+from .api.stream import FlagBroadcaster
 from .attestation import AttestationSigner, insert_attestation
 from .config import Settings
 from .db.session import dispose_engine, session_scope
 from .mempool.alchemy import AlchemyPendingTxListener
-from .schemas import PendingTx, RuleHit
+from .schemas import Attestation, PendingTx, RuleHit
 from .screening import BytecodeChecker, RuleRegistry
 from .screening.rules import ApproveToEoaRule
 
@@ -53,8 +57,9 @@ async def _screen_tx_consumer(
     registry: RuleRegistry,
     signer: AttestationSigner,
     addrs: AddressManager,
+    broadcaster: FlagBroadcaster,
 ) -> None:
-    """Drain the pending-tx queue, run rules, sign + persist hits.
+    """Drain the pending-tx queue, run rules, sign + persist + broadcast hits.
 
     If the monitored watch set shrinks between the Alchemy filter update
     and the tx landing on the queue, we skip the persist — an
@@ -66,7 +71,7 @@ async def _screen_tx_consumer(
         try:
             hits = await registry.run_all(tx)
             if hits:
-                await _handle_hits(tx, hits, signer, addrs)
+                await _handle_hits(tx, hits, signer, addrs, broadcaster)
         except asyncio.CancelledError:
             raise
         except Exception:
@@ -80,6 +85,7 @@ async def _handle_hits(
     hits: list[RuleHit],
     signer: AttestationSigner,
     addrs: AddressManager,
+    broadcaster: FlagBroadcaster,
 ) -> None:
     # Our Alchemy filter subscribes on `fromAddress`, so tx.from_address is
     # the canonical monitored address for each hit.
@@ -92,12 +98,16 @@ async def _handle_hits(
         )
         return
 
+    # Persist first so the broadcast always carries a valid id — we never
+    # stream a flag that isn't queryable via GET /flags.
+    signed_hits: list[tuple[int, Attestation]] = []
     async with session_scope() as session:
         for hit in hits:
             attestation = signer.build_and_sign(
                 tx=tx, monitored_address=monitored, hit=hit
             )
             flag_id = await insert_attestation(session, attestation)
+            signed_hits.append((flag_id, attestation))
             log.info(
                 "FLAG id=%d tx=%s addr=%s rule=%s severity=%s",
                 flag_id,
@@ -106,6 +116,9 @@ async def _handle_hits(
                 hit.rule_id,
                 hit.severity,
             )
+
+    for flag_id, attestation in signed_hits:
+        await broadcaster.broadcast(flag_id, attestation)
 
 
 @asynccontextmanager
@@ -119,12 +132,13 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     bytecode = BytecodeChecker(_ws_to_http(settings.alchemy_ws_url))
     registry = RuleRegistry([ApproveToEoaRule(bytecode)])
     signer = AttestationSigner(settings.agent_signing_key, settings.agent_id)
+    broadcaster = FlagBroadcaster()
 
     listener = AlchemyPendingTxListener(settings.alchemy_ws_url, addrs, queue)
     await listener.start()
 
     consumer_task = asyncio.create_task(
-        _screen_tx_consumer(queue, registry, signer, addrs),
+        _screen_tx_consumer(queue, registry, signer, addrs, broadcaster),
         name="screen-consumer",
     )
 
@@ -135,6 +149,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     app.state.bytecode = bytecode
     app.state.registry = registry
     app.state.signer = signer
+    app.state.broadcaster = broadcaster
     app.state.consumer_task = consumer_task
 
     log.info(
@@ -161,6 +176,9 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
 
 app = FastAPI(title="Aegis Monitor Agent", version="0.1.0", lifespan=lifespan)
 app.include_router(api_routes.router)
+app.include_router(flags_routes.router)
+app.include_router(stream_routes.router)
+app.include_router(ready_routes.router)
 
 
 @app.get("/health")
@@ -169,6 +187,6 @@ async def health() -> dict[str, str]:
 
     Deliberately decoupled from Alchemy / DB state so the HEALTHCHECK in
     the Dockerfile doesn't churn on transient upstream issues. `/ready`
-    (to be added) will gate on both.
+    gates on both.
     """
     return {"status": "ok"}

@@ -110,21 +110,21 @@
 
 ### HTTP + WebSocket API
 
-- [ ] **Endpoints**
-  - `POST /monitor` — add address to monitoring set
-  - `DELETE /monitor/:address` — remove address
-  - `GET /monitor` — list all monitored addresses
-  - `GET /flags?address=0x…&since=ts` — fetch historical flags, paginated
-  - `WS /stream` — push new flags to connected clients in real time
+- [x] **Endpoints** *(Clark)*
+  - `POST /monitor` — add address to monitoring set ✅ (shipped in task 4)
+  - `DELETE /monitor/:address` — remove address ✅ (shipped in task 4)
+  - `GET /monitor` — list all monitored addresses ✅ (shipped in task 4)
+  - `GET /flags?address=0x…&since_ms=…&before_id=…&limit=…` — fetch historical flags, cursor-paginated ✅ (`src/aegis_monitor/api/flags.py`; returns `{flags: [...], next_before_id: int|null}`; cursor pagination rather than offset so pages stay stable under writes; limit default 100, max 500)
+  - `WS /stream` — push new flags to connected clients in real time ✅
 
-- [ ] **WebSocket client manager**
-  - Maintain set of connected WS clients
-  - Broadcast new flags to all connected clients on new attestation
-  - Handle client connect/disconnect gracefully
+- [x] **WebSocket client manager** *(Clark)*
+  - Maintain set of connected WS clients ✅ `FlagBroadcaster` in `src/aegis_monitor/api/stream.py`
+  - Broadcast new flags to all connected clients on new attestation ✅ called from `_handle_hits` in `main.py` after DB persist, so the broadcast always carries a valid `flag_id` that resolves against `GET /flags`
+  - Handle client connect/disconnect gracefully ✅ clients that error on send are dropped; the next reconnect resyncs via `GET /flags?since_ms=…`
 
-- [ ] **Health check + readiness**
-  - `GET /health` — liveness
-  - `GET /ready` — checks Alchemy connection + Postgres connection
+- [x] **Health check + readiness** *(Clark)*
+  - `GET /health` — liveness ✅ stayed env-free so the Docker HEALTHCHECK doesn't churn on upstream hiccups
+  - `GET /ready` — checks Alchemy connection + Postgres connection ✅ pings DB via `SELECT 1`, verifies the Alchemy listener task + screen_tx_consumer task are still running; returns 200 with per-check JSON when healthy, 503 otherwise
 
 ### Testing
 
