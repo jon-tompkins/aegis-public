@@ -26,11 +26,12 @@
   - Create `src/` layout: `__init__.py`, `main.py`, `api/`, `screening/`, `attestation/`, `db/` ✅
   - Add `Dockerfile` (Python 3.12, slim) ✅ multi-stage, non-root user, HEALTHCHECK on `/health`
 
-- [ ] **Define Pydantic models**
-  - `Attestation` schema matching the spec shape
-  - `PendingTx` schema for incoming Alchemy txs
-  - `MonitorRequest`, `FlagResponse` schemas
-  - Validate against the attestation sig requirements (EIP-191)
+- [x] **Define Pydantic models** *(Clark)*
+  - `Attestation` schema matching the spec shape ✅ split into `AttestationBody` (signed) + `Attestation` (body+sig); added `canonical_json()` as the single wire-format contract
+  - `PendingTx` schema for incoming Alchemy txs ✅ frozen, keeps the raw payload alongside parsed fields
+  - `MonitorRequest`, `FlagResponse` schemas ✅
+  - Validate against the attestation sig requirements (EIP-191) ✅ 132-char 0x-prefixed sig gate + deterministic canonical JSON (sorted keys, no whitespace, UTF-8)
+  - Bonus: added `RuleHit` for the internal rule→attestation pipeline; 13 pytest cases in `tests/test_schemas.py` locking in wire format
 
 - [ ] **Set up Postgres + Alembic migrations**
   - `flags` table: `id, tx_hash, monitored_address, rule_id, rule_version, severity, reason_human, reason_structured (jsonb), agent_id, ts_ms, sig, created_at`
