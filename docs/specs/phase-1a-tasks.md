@@ -43,22 +43,22 @@
 
 ### Alchemy WebSocket Subscription
 
-- [ ] **AlchemyPendingTxListener class**
-  - Connect to Alchemy WS (`wss://eth-mainnet.g.alchemy.com/v2/...`)
-  - Subscribe to `alchemy_pendingTransactions` filtered by monitored addresses
-  - Parse raw tx to `PendingTx` model
-  - Emit to internal async queue
+- [x] **AlchemyPendingTxListener class** *(Clark)*
+  - Connect to Alchemy WS (`wss://eth-mainnet.g.alchemy.com/v2/...`) ✅ `websockets.asyncio.client.connect`
+  - Subscribe to `alchemy_pendingTransactions` filtered by monitored addresses ✅ single subscription with `fromAddress: sorted(addresses)` per Alchemy's filter contract
+  - Parse raw tx to `PendingTx` model ✅ `mempool.parser.parse_pending_tx`, EIP-1559 fallback to `maxFeePerGas` when `gasPrice` absent, raw payload preserved
+  - Emit to internal async queue ✅ `asyncio.Queue[PendingTx]` with max 10_000
 
-- [ ] **Address manager**
-  - In-memory store of `monitored_addresses` (set)
-  - API endpoints to add/remove: `POST /monitor`, `DELETE /monitor/:address`
-  - Persist monitored list to Postgres `monitored_addresses` table so it survives restart
-  - Load from DB on startup
+- [x] **Address manager** *(Clark)*
+  - In-memory store of `monitored_addresses` (set) ✅ `set[str]` under `asyncio.Lock`
+  - API endpoints to add/remove: `POST /monitor`, `DELETE /monitor/:address` ✅ plus `GET /monitor` for listing; DELETE validates address format via the `MonitorRequest` validator; returns 404 on unwatched, 400 on bad format
+  - Persist monitored list to Postgres `monitored_addresses` table so it survives restart ✅ soft-delete on remove (`active=false`, `removed_at=now`) so flag history stays joinable
+  - Load from DB on startup ✅ called from the FastAPI lifespan handler
 
-- [ ] **Reconnection handling**
-  - Exponential backoff on WS disconnect
-  - Resubscribe to active filters on reconnect
-  - Log disconnections for debugging
+- [x] **Reconnection handling** *(Clark)*
+  - Exponential backoff on WS disconnect ✅ 1s → doubled each retry, capped at 60s
+  - Resubscribe to active filters on reconnect ✅ each connect reads a fresh snapshot from the `AddressManager`; change signal (`asyncio.Event`) triggers a clean reconnect when the watch set mutates
+  - Log disconnections for debugging ✅ `logging` module, structured messages at INFO/WARN
 
 ### Tier 1 Detection Rules
 
