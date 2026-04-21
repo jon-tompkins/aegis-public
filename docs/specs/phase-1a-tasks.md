@@ -20,11 +20,11 @@
 
 ### Core Infrastructure
 
-- [ ] **Initialize project structure**
-  - Create `aegis-monitor/` directory in aegis-public
-  - Set up `pyproject.toml` with dependencies: `fastapi`, `uvicorn`, `web3`, `eth-account`, `websockets`, `asyncpg`, `pydantic`, `alembic`
-  - Create `src/` layout: `__init__.py`, `main.py`, `api/`, `screening/`, `attestation/`, `db/`
-  - Add `Dockerfile` (Python 3.12, slim)
+- [x] **Initialize project structure** *(Clark, commit pending)*
+  - Create `aegis-monitor/` directory in aegis-public ✅ renamed from prior `agent/` scaffold, git history preserved
+  - Set up `pyproject.toml` with dependencies: `fastapi`, `uvicorn`, `web3`, `eth-account`, `websockets`, `asyncpg`, `pydantic`, `alembic` ✅ plus `sqlalchemy[asyncio]` for Alembic + ORM, `mypy` in dev extras
+  - Create `src/` layout: `__init__.py`, `main.py`, `api/`, `screening/`, `attestation/`, `db/` ✅
+  - Add `Dockerfile` (Python 3.12, slim) ✅ multi-stage, non-root user, HEALTHCHECK on `/health`
 
 - [ ] **Define Pydantic models**
   - `Attestation` schema matching the spec shape
