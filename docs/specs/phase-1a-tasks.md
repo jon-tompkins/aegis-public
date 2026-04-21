@@ -97,14 +97,16 @@
 
 ### Signed Attestations
 
-- [ ] **EIP-191 signing**
-  - Canonical JSON serialization of Attestation (deterministic — sorted keys, no whitespace)
-  - Sign with agent's Ethereum key (_env: `AGENT_SIGNING_KEY`)
-  - Produce `sig` field as `0x` hex signature
+- [x] **EIP-191 signing** *(Clark)*
+  - Canonical JSON serialization of Attestation ✅ `AttestationBody.canonical_json()` from task 2 (locked wire-format contract, sorted keys, no whitespace, UTF-8)
+  - Sign with agent's Ethereum key (env `AGENT_SIGNING_KEY`) ✅ `AttestationSigner` (src/aegis_monitor/attestation/signer.py); accepts the key with or without `0x` prefix; exposes the derived public address for verifiers
+  - Produce `sig` field as `0x` hex signature ✅ 132-char `0x` + 65-byte r‖s‖v, normalised across eth_account HexBytes versions
+  - Roundtrip tested: `Account.recover_message(encode_defunct(body.canonical_json()), signature=att.sig)` returns the signer's address
 
-- [ ] **Attestation persistence**
-  - On rule hit: construct `Attestation`, sign it, persist to Postgres `flags` table
-  - Return attestation to caller
+- [x] **Attestation persistence** *(Clark)*
+  - On rule hit: construct `Attestation`, sign it, persist to Postgres `flags` table ✅ `_handle_hits()` in main.py does all three steps within a single `session_scope()`; `insert_attestation()` in src/aegis_monitor/attestation/repo.py flushes to populate `flag.id` before commit so downstream (WS broadcast, next task) can reference the assigned id
+  - Return attestation to caller ✅ signer returns the full `Attestation` Pydantic model; the repo returns the DB id
+  - Guard: if a monitored address is removed between WS filter update and tx arrival, the hit is skipped (avoids spurious attestations for addresses we no longer watch)
 
 ### HTTP + WebSocket API
 

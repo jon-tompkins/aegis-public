@@ -2,16 +2,17 @@
 
 Lifespan wires the pieces that share state:
 
-- `Settings`        — typed env config (fails fast on missing required vars)
-- `AddressManager`  — in-memory + DB-backed watch set
+- `Settings`           — typed env config (fails fast on missing required vars)
+- `AddressManager`     — in-memory + DB-backed watch set
 - `AlchemyPendingTxListener` — background task feeding the tx queue
-- `BytecodeChecker` — async LRU cache for `eth_getCode` lookups
-- `RuleRegistry`    — the Tier 1 rules registered at boot
-- `screen_tx_consumer` — drains the queue, runs rules, logs hits
+- `BytecodeChecker`    — async LRU cache for `eth_getCode` lookups
+- `RuleRegistry`       — Tier 1 rules registered at boot
+- `AttestationSigner`  — EIP-191 signer bound to the agent key
+- `screen_tx_consumer` — drains the queue, runs rules, signs + persists hits
 
-Persistence of the hits (EIP-191 signing + DB insert + WS broadcast)
-arrives in the next task. For now, hits are logged at INFO so we can
-eyeball the pipeline end-to-end locally.
+Persistence path: on rule hit the consumer builds an `AttestationBody`,
+signs it with the agent key, and writes a row to `flags`. WS /stream
+broadcast lands in the next task.
 """
 
 from __future__ import annotations
@@ -25,8 +26,9 @@ from fastapi import FastAPI
 
 from .address_manager import AddressManager
 from .api import routes as api_routes
+from .attestation import AttestationSigner, insert_attestation
 from .config import Settings
-from .db.session import dispose_engine
+from .db.session import dispose_engine, session_scope
 from .mempool.alchemy import AlchemyPendingTxListener
 from .schemas import PendingTx, RuleHit
 from .screening import BytecodeChecker, RuleRegistry
@@ -38,12 +40,7 @@ _QUEUE_MAX = 10_000
 
 
 def _ws_to_http(ws_url: str) -> str:
-    """Derive the Alchemy HTTP endpoint from the WS URL.
-
-    Alchemy serves `wss://…` and `https://…` from the same host + API key
-    prefix, so string replacement is sufficient. Callers that need a
-    different RPC endpoint can introduce a dedicated env var later.
-    """
+    """Derive the Alchemy HTTP endpoint from the WS URL."""
     if ws_url.startswith("wss://"):
         return "https://" + ws_url[len("wss://"):]
     if ws_url.startswith("ws://"):
@@ -54,18 +51,22 @@ def _ws_to_http(ws_url: str) -> str:
 async def _screen_tx_consumer(
     queue: asyncio.Queue[PendingTx],
     registry: RuleRegistry,
+    signer: AttestationSigner,
+    addrs: AddressManager,
 ) -> None:
-    """Drain the pending-tx queue, run rules, log any hits.
+    """Drain the pending-tx queue, run rules, sign + persist hits.
 
-    Persistence will replace the logging in the next task.
+    If the monitored watch set shrinks between the Alchemy filter update
+    and the tx landing on the queue, we skip the persist — an
+    attestation for an unwatched address would be noise.
     """
     log.info("screen_tx_consumer running with %d rules", len(registry))
     while True:
         tx = await queue.get()
         try:
             hits = await registry.run_all(tx)
-            for hit in hits:
-                _log_hit(tx, hit)
+            if hits:
+                await _handle_hits(tx, hits, signer, addrs)
         except asyncio.CancelledError:
             raise
         except Exception:
@@ -74,16 +75,37 @@ async def _screen_tx_consumer(
             queue.task_done()
 
 
-def _log_hit(tx: PendingTx, hit: RuleHit) -> None:
-    log.info(
-        "FLAG %s tx=%s addr=%s rule=%s severity=%s reason=%s",
-        hit.rule_id,
-        tx.tx_hash,
-        tx.from_address,
-        hit.rule_version,
-        hit.severity,
-        hit.reason_human,
-    )
+async def _handle_hits(
+    tx: PendingTx,
+    hits: list[RuleHit],
+    signer: AttestationSigner,
+    addrs: AddressManager,
+) -> None:
+    # Our Alchemy filter subscribes on `fromAddress`, so tx.from_address is
+    # the canonical monitored address for each hit.
+    monitored = tx.from_address
+    if not await addrs.is_monitored(monitored):
+        log.debug(
+            "tx %s from %s dropped — no longer monitored",
+            tx.tx_hash,
+            monitored,
+        )
+        return
+
+    async with session_scope() as session:
+        for hit in hits:
+            attestation = signer.build_and_sign(
+                tx=tx, monitored_address=monitored, hit=hit
+            )
+            flag_id = await insert_attestation(session, attestation)
+            log.info(
+                "FLAG id=%d tx=%s addr=%s rule=%s severity=%s",
+                flag_id,
+                tx.tx_hash,
+                monitored,
+                hit.rule_id,
+                hit.severity,
+            )
 
 
 @asynccontextmanager
@@ -96,12 +118,14 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
 
     bytecode = BytecodeChecker(_ws_to_http(settings.alchemy_ws_url))
     registry = RuleRegistry([ApproveToEoaRule(bytecode)])
+    signer = AttestationSigner(settings.agent_signing_key, settings.agent_id)
 
     listener = AlchemyPendingTxListener(settings.alchemy_ws_url, addrs, queue)
     await listener.start()
 
     consumer_task = asyncio.create_task(
-        _screen_tx_consumer(queue, registry), name="screen-consumer"
+        _screen_tx_consumer(queue, registry, signer, addrs),
+        name="screen-consumer",
     )
 
     app.state.settings = settings
@@ -110,11 +134,13 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     app.state.listener = listener
     app.state.bytecode = bytecode
     app.state.registry = registry
+    app.state.signer = signer
     app.state.consumer_task = consumer_task
 
     log.info(
-        "aegis-monitor up: agent_id=%s monitored=%d rules=%s",
+        "aegis-monitor up: agent_id=%s signer=%s monitored=%d rules=%s",
         settings.agent_id,
+        signer.address,
         len(addrs.snapshot()),
         registry.ids(),
     )
