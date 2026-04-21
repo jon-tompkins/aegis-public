@@ -62,20 +62,20 @@
 
 ### Tier 1 Detection Rules
 
-- [ ] **Rule engine (base)**
-  - `Rule` protocol: `matches(tx: PendingTx) -> bool` + `severity`, `rule_id`, `rule_version`
-  - `RuleRegistry` that runs all registered rules and collects hits
-  - Each rule outputs a `RuleHit` with rule_id, severity, reason_human, reason_structured
+- [x] **Rule engine (base)** *(Clark)*
+  - `Rule` protocol: runtime_checkable `evaluate(tx) -> RuleHit | None` + `rule_id`, `rule_version`, `severity` attrs (matches schema `Severity` literal)
+  - `RuleRegistry` that runs all registered rules and collects hits — exceptions in one rule are logged and swallowed so the others still run
+  - Each rule outputs a `RuleHit` with rule_id, rule_version, severity, reason_human, reason_structured ✅
 
-- [ ] **Rule T1.1 — Approval to EOA spender**
-  - Detect `approve`, `increaseAllowance`, `permit` calls where `spender` has no contract bytecode
-  - Check: `web3.eth.get_code(spender) == b''` (no code)
-  - ⚠️ HUMAN DECISION NEEDED: Should we cache bytecode lookups? For how long? TTL?
-  - Test against known EOA approvers vs contract approvers
+- [x] **Rule T1.1 — Approval to EOA spender** *(Clark)*
+  - Detect `approve`, `increaseAllowance`, `permit` calls where `spender` has no contract bytecode ✅ covers all four selectors (0x095ea7b3, 0x39509351, 0xa22cb465, 0xd505accf); permit decoded as arg1 (owner is arg0)
+  - Check: `web3.eth.get_code(spender) == b''` ✅ implemented via an async HTTP `eth_getCode` through a cached checker rather than pulling in web3's sync client
+  - ⚠️ HUMAN DECISION — Bytecode caching: **Clark default shipped (Clark will revise if Jonto prefers different numbers).** Positives cached forever (contracts don't un-deploy, SELFDESTRUCT removed post-Cancun), negatives cached 10 min (CREATE2 can deploy retro), LRU 10k entries.
+  - Test against known EOA approvers vs contract approvers ✅ unit tests with a `FakeBytecode`; live-mainnet replay sits in task 8
 
-- [ ] **Rule T1.2 — setApprovalForAll to EOA**
-  - Detect `setApprovalForAll` where `operator` has no contract bytecode
-  - Same bytecode check as T1.1
+- [x] **Rule T1.2 — setApprovalForAll to EOA** *(Clark — folded into the same class as T1.1)*
+  - Detect `setApprovalForAll` where `operator` has no contract bytecode ✅ same `ApproveToEoaRule`; the selector list covers `setApprovalForAll` alongside the ERC-20 methods. Single rule, single rule_id so attestation signatures aren't fragmented across what is conceptually one detector.
+  - Same bytecode check as T1.1 ✅ shared `BytecodeChecker` instance
 
 - [ ] **Rule T1.3 — transferFrom by unauthorized caller**
   - Detect `transferFrom(owner, attackerEOA, ...)` where `msg.sender` is neither `owner` nor approved

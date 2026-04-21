@@ -1,1 +1,6 @@
-"""Rule engine and Tier 1 detectors. Rules live in `rules/`."""
+"""Rule engine + Tier 1 detectors."""
+
+from .bytecode import BytecodeChecker
+from .engine import Rule, RuleRegistry
+
+__all__ = ["BytecodeChecker", "Rule", "RuleRegistry"]
