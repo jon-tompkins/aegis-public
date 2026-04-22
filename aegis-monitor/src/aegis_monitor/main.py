@@ -35,8 +35,19 @@ from .config import Settings
 from .db.session import dispose_engine, session_scope
 from .mempool.alchemy import AlchemyPendingTxListener
 from .schemas import Attestation, PendingTx, RuleHit
-from .screening import BytecodeChecker, RuleRegistry
-from .screening.rules import ApproveToEoaRule
+from .screening import (
+    BytecodeChecker,
+    Erc20Reader,
+    EthCallClient,
+    InteractionState,
+    RuleRegistry,
+)
+from .screening.rules import (
+    ApproveToEoaRule,
+    FreshApprovalNewContractRule,
+    TransferFromUnauthorizedRule,
+    UnlimitedApprovalRule,
+)
 
 log = logging.getLogger(__name__)
 
@@ -129,8 +140,19 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     addrs = AddressManager()
     await addrs.load_from_db()
 
-    bytecode = BytecodeChecker(_ws_to_http(settings.alchemy_ws_url))
-    registry = RuleRegistry([ApproveToEoaRule(bytecode)])
+    rpc_url = _ws_to_http(settings.alchemy_ws_url)
+    bytecode = BytecodeChecker(rpc_url)
+    eth_call = EthCallClient(rpc_url)
+    erc20 = Erc20Reader(eth_call)
+    interaction_state = InteractionState()
+    registry = RuleRegistry(
+        [
+            ApproveToEoaRule(bytecode),
+            TransferFromUnauthorizedRule(erc20),
+            UnlimitedApprovalRule(erc20),
+            FreshApprovalNewContractRule(interaction_state),
+        ]
+    )
     signer = AttestationSigner(settings.agent_signing_key, settings.agent_id)
     broadcaster = FlagBroadcaster()
 
@@ -147,6 +169,9 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     app.state.addrs = addrs
     app.state.listener = listener
     app.state.bytecode = bytecode
+    app.state.eth_call = eth_call
+    app.state.erc20 = erc20
+    app.state.interaction_state = interaction_state
     app.state.registry = registry
     app.state.signer = signer
     app.state.broadcaster = broadcaster
@@ -171,6 +196,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         except (asyncio.CancelledError, Exception):
             pass
         await bytecode.close()
+        await eth_call.close()
         await dispose_engine()
 
 

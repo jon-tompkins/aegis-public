@@ -77,23 +77,29 @@
   - Detect `setApprovalForAll` where `operator` has no contract bytecode ✅ same `ApproveToEoaRule`; the selector list covers `setApprovalForAll` alongside the ERC-20 methods. Single rule, single rule_id so attestation signatures aren't fragmented across what is conceptually one detector.
   - Same bytecode check as T1.1 ✅ shared `BytecodeChecker` instance
 
-- [ ] **Rule T1.3 — transferFrom by unauthorized caller**
-  - Detect `transferFrom(owner, attackerEOA, ...)` where `msg.sender` is neither `owner` nor approved
-  - Need to track allowance state for monitored addresses
-  - ⚠️ HUMAN DECISION NEEDED: How do we track allowances? Full allowance map or just check current approval?
+- [x] **Rule T1.3 — transferFrom by unauthorized caller** *(Bob)*
+  - Detect `transferFrom(owner, recipient, amount)` where `msg.sender` is neither `owner` nor approved ✅ `TransferFromUnauthorizedRule` in `src/aegis_monitor/screening/rules/transfer_from.py`
+  - ⚠️ HUMAN DECISION — Allowance tracking: **Bob default shipped.** Per-tx `eth_call` of `allowance(owner, msg.sender)` (no full state mirror). Falls back to `isApprovedForAll` to cover ERC-721. Both lookups returning `None` → skip rather than guess.
+  - Severity: critical. ERC-20 + ERC-721 covered via the same selector (`0x23b872dd`).
+  - 9 unit tests in `tests/test_transfer_from.py` covering owner-self path, allowance sufficient, allowance zero, NFT approval-for-all, both-inconclusive, non-transferFrom, contract creation.
 
-- [ ] **Rule T1.4 — Unlimited approval**
-  - Detect approval amount = `uint256.max` (`2**256 - 1`) or > 10× historical balance
-  - Need historical balance lookback (use Alchemy `getTokenBalances` or `alchemy_getTokenMetadata`)
-  - ⚠️ HUMAN DECISION NEEDED: What's the 10× threshold source? User's max historical balance? Protocol's max?
+- [x] **Rule T1.4 — Unlimited / outsized approval** *(Bob)*
+  - Detect approval amount = `uint256.max` → severity **high**; amount > 10× current balance → severity **medium** ✅ `UnlimitedApprovalRule` in `src/aegis_monitor/screening/rules/unlimited_approval.py`
+  - ⚠️ HUMAN DECISION — Threshold source: **Bob default shipped.** Current `balanceOf(owner)` via `Erc20Reader`, not historical max. Multiplier 10× lives in `_OUTSIZED_MULTIPLIER`. Alchemy enhanced API (`getTokenBalances` history) is a follow-up if signal turns out to be too noisy on whales.
+  - Skip when balance lookup fails or `balance == 0` (avoid noise on legit pre-funding flows).
+  - Selectors covered: `approve`, `increaseAllowance`, `permit` (owner is the on-chain signer for permit, not the relayer). `setApprovalForAll` deliberately excluded — boolean toggle, already covered by T1.1 when operator is an EOA.
+  - 11 unit tests in `tests/test_unlimited_approval.py`.
 
-- [ ] **Rule T1.5 — Fresh approval + new contract call**
-  - Track: for each monitored address, when was the last approval given to an EOA?
-  - If same address uses a new (unknown) contract within N blocks of fresh approval → flag
-  - ⚠️ HUMAN DECISION NEEDED: What is N? Default 10 blocks? Configurable?
+- [x] **Rule T1.5 — Fresh approval + new contract call** *(Bob)*
+  - Approval (any T1.1 selector) primes a wallclock timer per monitored address; first-touch on a new contract within the window flags ✅ `FreshApprovalNewContractRule` + `InteractionState` in `src/aegis_monitor/screening/`
+  - ⚠️ HUMAN DECISION — Window size: **Bob default shipped.** 120 s ≈ 10 mainnet blocks at 12 s slot time. Override via `T1_5_FRESH_APPROVAL_WINDOW_SECONDS`. Switched from "blocks" to "seconds" because pending txs aren't in a block yet — wallclock is the only ordering we have.
+  - State is process-local for v1. Persistence (so signal survives restart) is a follow-up; tracked as a TODO in the rule docstring.
+  - LRU bounds: `max_addresses=5_000`, `max_destinations_per_addr=2_000` keeps memory finite under churn.
+  - 6 unit tests in `tests/test_fresh_approval_new_contract.py` + 6 helper tests in `tests/test_interaction_state.py`.
 
-- [ ] **Run all rules against pending tx stream**
-  - Pipeline: Alchemy tx → parse → run RuleRegistry → collect hits → emit for attestation
+- [x] **Run all rules against pending tx stream** *(Clark + Bob)*
+  - Pipeline: Alchemy tx → parse → run RuleRegistry → collect hits → emit for attestation ✅ wired in `main.py` lifespan; registry now holds all four rules (`t1.approve_to_eoa`, `t1.transfer_from_unauthorized`, `t1.unlimited_approval`, `t1.fresh_approval_new_contract`)
+  - Shared `EthCallClient` reused across `Erc20Reader` + future view-only readers; cleaned up in lifespan teardown.
 
 ### Signed Attestations
 
