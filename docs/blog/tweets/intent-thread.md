@@ -1,6 +1,6 @@
 # Aegis Twitter Thread — "Intent" Angle
 
-**Thread purpose:** Introduce Aegis through the "intent in contracts" angle. Position DeFi exploit defense as a missing layer, not just a technical problem.
+**Thread purpose:** Introduce Aegis through the "intent in agreements" angle. Position DeFi exploit defense as a missing coordination layer, not just a technical problem.
 
 ---
 
@@ -10,34 +10,33 @@ But they have no purpose.
 No intent.
 No conscience.
 
-That's why DeFi lost $10B+ to exploits where attackers technically "did nothing wrong."
+That's why DeFi has lost billions to exploits where attackers technically "did nothing wrong."
 
 ---
 
 **Tweet 2 (the gap):**
-Real contracts work because courts ask two questions:
+Real-world agreements work because two questions get asked:
 1. What do the words say?
 2. What was meant to happen?
 
 DeFi only answers #1.
-That's why exploiters win.
 
 ---
 
-**Tweet 3 (the analogy):**
-A landlord who charges exact market rate while harassing tenants out of their homes "followed the lease."
-A vendor who delivers technically-correct goods that cause harm "honored the agreement."
+**Tweet 3 (the crypto-native examples):**
+A flash-loan borrower who repays in the same block "never stole anything."
+An oracle exploiter who submits a valid signed price "followed the protocol."
 
-The law looks at purpose. Code doesn't.
+Code said yes. Intent said no.
 
 ---
 
 **Tweet 4 (the solution intro):**
 What if DeFi had a way to ask:
-"Is this transaction doing what this protocol was meant to do?"
+*"Is this transaction doing what this protocol was meant to do?"*
 
 That's not a technical question.
-It's a legal one.
+It's a coordination one.
 Until now, no one built it.
 
 ---
@@ -45,25 +44,35 @@ Until now, no one built it.
 **Tweet 5 (the product):**
 Aegis screens every transaction against the protocol's intended purpose — not just its code.
 
-Guardians — AI agents committed to a verifiable profile — evaluate intent before execution.
+Independent AI agents flag transactions whose behavior matches patterns that have previously drained users.
 
-If it looks wrong, even if it's technically right, it's escalated.
+Open source. Anyone can read, fork, or contest the rules.
 
 ---
 
-**Tweet 6 (the closer):**
-DeFi needs audits. It needs formal verification. It needs better code.
+**Tweet 6 (the receipts):**
+Ronin. Wormhole. Mango.
+The code allowed it.
+The protocol never meant for it.
 
-It also needs someone asking the question no smart contract can answer:
+That gap is what Aegis closes.
+
+---
+
+**Tweet 7 (the closer):**
+Audits and formal verification are necessary. They're not sufficient.
+
+DeFi needs someone asking the question no smart contract can answer:
 
 *"What was this supposed to do?"*
 
-Aegis asks it. Every time. Before it's too late.
-
-#DeFi #Web3 #intent
+Aegis asks it. Every time. Before confirmation.
 
 ---
 
-**Tweet 7 (engagement prompt):**
-How do you think about "intent" vs "letter" in your protocol design?
-Honest question — most don't have an answer yet.
+**Tweet 8 (CTA):**
+Read the spec. File a rule. Run a guardian.
+
+→ github.com/jon-tompkins/aegis-public
+
+#DeFi #Web3
