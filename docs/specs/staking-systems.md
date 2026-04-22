@@ -204,10 +204,11 @@ Per Jonto's DeFi in a Box framework:
 
 | Primitive | Implementation | Purpose |
 |-----------|---------------|---------|
-| AMM | Solidly-style (chain-native) | Fee generation, LP for validators |
-| Pool Lending | Aave/Compound-style | Validator can borrow against staked position |
-| Bridging | LayerZero or native | Cross-chain asset movement |
-| Governance | Curve/Solidly gauges | Validator voting on protocol params |
+| Primitive | Implementation | Purpose | Notes |
+|-----------|---------------|---------|-------|
+| AMM | **Solidly** (volatile + stableswap) | Fee generation, LP for validators | Battle-tested. Volatile pairs + stablecoin swaps. |
+| Pool Lending | **Aave v3** | Borrow against staked position | Widely audited, large TVL, upgradeable proxy |
+| CDP Stablecoin | **GHO** (Aave-built) | Chain-native stable, backed by protocol collateral | Mintable by protocol, governed via Aave governance |
 
 **Agents as Protocol Managers:**
 - Agents don't actively trade — they monitor and manage protocols
