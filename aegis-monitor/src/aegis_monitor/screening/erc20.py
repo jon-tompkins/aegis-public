@@ -10,8 +10,6 @@ and skip rather than flagging on missing data.
 
 from __future__ import annotations
 
-from typing import Optional
-
 from .eth_call import EthCallClient
 
 # Function selectors (first 4 bytes of keccak256(signature)).
@@ -25,7 +23,7 @@ def _encode_address(addr: str) -> str:
     return addr[2:].lower().rjust(64, "0")
 
 
-def _decode_uint256(hex_result: str) -> Optional[int]:
+def _decode_uint256(hex_result: str) -> int | None:
     """Decode a 32-byte hex word as a uint256.
 
     Returns None for empty/malformed results so callers can treat that
@@ -42,7 +40,7 @@ def _decode_uint256(hex_result: str) -> Optional[int]:
         return None
 
 
-def _decode_bool(hex_result: str) -> Optional[bool]:
+def _decode_bool(hex_result: str) -> bool | None:
     value = _decode_uint256(hex_result)
     if value is None:
         return None
@@ -57,7 +55,7 @@ class Erc20Reader:
 
     async def allowance(
         self, token: str, owner: str, spender: str
-    ) -> Optional[int]:
+    ) -> int | None:
         """Return `IERC20(token).allowance(owner, spender)` or None on error.
 
         Reverts on non-ERC20 contracts produce None; callers should treat
@@ -73,7 +71,7 @@ class Erc20Reader:
             return None
         return _decode_uint256(result)
 
-    async def balance_of(self, token: str, owner: str) -> Optional[int]:
+    async def balance_of(self, token: str, owner: str) -> int | None:
         """Return `IERC20(token).balanceOf(owner)` or None on error."""
         data = _BALANCE_OF_SELECTOR + _encode_address(owner)
         result = await self._eth_call.call(token, data)
@@ -83,7 +81,7 @@ class Erc20Reader:
 
     async def is_approved_for_all(
         self, token: str, owner: str, operator: str
-    ) -> Optional[bool]:
+    ) -> bool | None:
         """Return `IERC721(token).isApprovedForAll(owner, operator)` or None.
 
         Used as a fallback on `transferFrom` when ERC-20 allowance lookup

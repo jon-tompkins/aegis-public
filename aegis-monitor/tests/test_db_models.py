@@ -10,7 +10,6 @@ from __future__ import annotations
 
 from aegis_monitor.db.models import Base, Flag, MonitoredAddress
 
-
 # -----------------------------------------------------------------------------
 # Table identities
 # -----------------------------------------------------------------------------

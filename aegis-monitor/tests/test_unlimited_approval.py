@@ -6,12 +6,11 @@ import pytest
 
 from aegis_monitor.schemas import PendingTx
 from aegis_monitor.screening.rules.unlimited_approval import (
-    UnlimitedApprovalRule,
     _UINT256_MAX,
+    UnlimitedApprovalRule,
     _decode_approve_amount,
     _decode_permit,
 )
-
 
 # -----------------------------------------------------------------------------
 # Fakes + helpers

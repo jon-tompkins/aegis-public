@@ -9,6 +9,7 @@ attestation.
 from __future__ import annotations
 
 import json
+from datetime import UTC
 
 import pytest
 from pydantic import ValidationError
@@ -21,7 +22,6 @@ from aegis_monitor.schemas import (
     PendingTx,
     RuleHit,
 )
-
 
 # -----------------------------------------------------------------------------
 # MonitorRequest
@@ -210,7 +210,7 @@ def test_attestation_accepts_valid_sig() -> None:
 
 
 def test_flag_response_roundtrip() -> None:
-    from datetime import datetime, timezone
+    from datetime import datetime
 
     att = Attestation(
         tx_hash="0x" + "ab" * 32,
@@ -227,7 +227,7 @@ def test_flag_response_roundtrip() -> None:
     resp = FlagResponse(
         id=42,
         attestation=att,
-        created_at=datetime(2026, 4, 21, tzinfo=timezone.utc),
+        created_at=datetime(2026, 4, 21, tzinfo=UTC),
     )
     dumped = resp.model_dump(mode="json")
     assert dumped["id"] == 42

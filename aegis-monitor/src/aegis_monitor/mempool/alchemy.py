@@ -21,6 +21,7 @@ separately.
 from __future__ import annotations
 
 import asyncio
+import contextlib
 import json
 import logging
 from typing import Any
@@ -62,10 +63,8 @@ class AlchemyPendingTxListener:
         if self._task is None:
             return
         self._task.cancel()
-        try:
+        with contextlib.suppress(asyncio.CancelledError, Exception):
             await self._task
-        except (asyncio.CancelledError, Exception):
-            pass
         self._task = None
 
     # ---- internals -------------------------------------------------------

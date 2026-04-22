@@ -13,7 +13,6 @@ not as zero.
 from __future__ import annotations
 
 import logging
-from typing import Optional
 
 import httpx
 
@@ -42,7 +41,7 @@ class EthCallClient:
             await self._client.aclose()
             self._client = None
 
-    async def call(self, to: str, data: str) -> Optional[str]:
+    async def call(self, to: str, data: str) -> str | None:
         """Issue `eth_call` and return the raw 0x-prefixed hex result.
 
         Returns None on any error — connection, HTTP status, JSON-RPC

@@ -14,7 +14,7 @@ the listener always reads a fresh snapshot when it re-subscribes.
 from __future__ import annotations
 
 import asyncio
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from sqlalchemy import select
 
@@ -83,7 +83,7 @@ class AddressManager:
                 if existing is None or not existing.active:
                     return False
                 existing.active = False
-                existing.removed_at = datetime.now(timezone.utc)
+                existing.removed_at = datetime.now(UTC)
             self._addrs.discard(address)
             self._change.set()
             return True

@@ -18,9 +18,10 @@ broadcast lands in the next task.
 from __future__ import annotations
 
 import asyncio
+import contextlib
 import logging
+from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
-from typing import AsyncIterator
 
 from fastapi import FastAPI
 
@@ -191,10 +192,8 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         log.info("aegis-monitor shutting down")
         await listener.stop()
         consumer_task.cancel()
-        try:
+        with contextlib.suppress(asyncio.CancelledError, Exception):
             await consumer_task
-        except (asyncio.CancelledError, Exception):
-            pass
         await bytecode.close()
         await eth_call.close()
         await dispose_engine()

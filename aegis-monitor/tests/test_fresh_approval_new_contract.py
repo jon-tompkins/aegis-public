@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Iterator
+from collections.abc import Iterator
 from unittest.mock import patch
 
 import pytest
@@ -12,7 +12,6 @@ from aegis_monitor.screening.interaction_state import InteractionState
 from aegis_monitor.screening.rules.fresh_approval_new_contract import (
     FreshApprovalNewContractRule,
 )
-
 
 _MONITORED = "0x" + "33" * 20
 _TOKEN = "0x" + "11" * 20

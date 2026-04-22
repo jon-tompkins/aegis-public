@@ -17,7 +17,7 @@ Two tables:
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Any, Optional
+from typing import Any
 
 from sqlalchemy import (
     BigInteger,
@@ -77,14 +77,14 @@ class MonitoredAddress(Base):
     __tablename__ = "monitored_addresses"
 
     address: Mapped[str] = mapped_column(String(42), primary_key=True)
-    label: Mapped[Optional[str]] = mapped_column(String(128), nullable=True)
+    label: Mapped[str | None] = mapped_column(String(128), nullable=True)
     active: Mapped[bool] = mapped_column(
         Boolean, nullable=False, server_default=text("true")
     )
     added_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )
-    removed_at: Mapped[Optional[datetime]] = mapped_column(
+    removed_at: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True), nullable=True
     )
 

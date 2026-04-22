@@ -25,7 +25,6 @@ from aegis_monitor.screening.rules.approve_to_eoa import ApproveToEoaRule
 
 from .fixtures.alchemy_payloads import ALL_SCENARIOS
 
-
 _TEST_KEY = "0x" + "22" * 32
 
 

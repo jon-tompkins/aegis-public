@@ -13,7 +13,6 @@ from eth_account.messages import encode_defunct
 from aegis_monitor.attestation.signer import AttestationSigner
 from aegis_monitor.schemas import AttestationBody, PendingTx, RuleHit
 
-
 # Deterministic test key — DO NOT reuse on any real network.
 _TEST_KEY = "0x" + "11" * 32
 
