@@ -20,10 +20,12 @@ from __future__ import annotations
 import asyncio
 import contextlib
 import logging
+import os
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 
 from .address_manager import AddressManager
 from .api import flags as flags_routes
@@ -200,6 +202,21 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
 
 
 app = FastAPI(title="Aegis Monitor Agent", version="0.1.0", lifespan=lifespan)
+
+# CORS is a boot-time concern (CORSMiddleware can't be mutated after startup),
+# so read origins directly from env rather than routing through Settings. "*"
+# is fine for dev and the demo monitor site; tighten to an explicit list in
+# prod via AEGIS_ALLOWED_ORIGINS.
+_cors_origins_raw = os.environ.get("AEGIS_ALLOWED_ORIGINS", "*")
+_cors_origins = [o.strip() for o in _cors_origins_raw.split(",") if o.strip()] or ["*"]
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=_cors_origins,
+    allow_credentials=False,
+    allow_methods=["GET", "POST", "DELETE", "OPTIONS"],
+    allow_headers=["*"],
+)
+
 app.include_router(api_routes.router)
 app.include_router(flags_routes.router)
 app.include_router(stream_routes.router)
