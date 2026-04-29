@@ -1,9 +1,9 @@
 ## Aegis Flag Storage — Arweave-Canonical + Postgres Hot Cache
 
-**Spec Version:** 0.1 (draft)
+**Spec Version:** 0.2
 **Author:** Bob
-**Date:** 2026-04-23
-**Status:** Draft — for Jonto/Clark review
+**Date:** 2026-04-23 (v0.1) → 2026-04-29 (v0.2 — open questions resolved)
+**Status:** Accepted — Jonto delegated open-question calls to Bob on 2026-04-29
 **Tracks:** [#28](https://github.com/jon-tompkins/aegis-public/issues/28) decision 4 (decentralized storage)
 **Related:** [`infrastructure.md`](./infrastructure.md), [`phase-1a-tasks.md`](./phase-1a-tasks.md), [`screening-rules.md`](./screening-rules.md)
 
@@ -299,17 +299,79 @@ None of that changes the Phase 1a on-disk format. The `Attestation` wire contrac
 ## Operator checklist (Phase 1a deploy)
 
 - [ ] Generate a fresh Irys wallet keypair. Private key → Secrets Manager.
-- [ ] Pre-fund ~$20.
-- [ ] Publish the monitor's EIP-191 signer pubkey at `/agent-identity`, and also upload a signed identity statement to Arweave (one-time). Record the Arweave tx id in infra docs.
-- [ ] Apply the Alembic migration that adds `arweave_tx_id` + `arweave_confirmed_at`.
-- [ ] Ship the writer task (Fargate sidecar or in-process background task — in-process is simpler for Phase 1a).
+- [ ] Pre-fund Irys wallet ~$20 (USDC or AR via Irys top-up).
+- [ ] Generate the monitor's EIP-191 signing keypair. Private key → Secrets Manager.
+- [ ] Run `scripts/upload-agent-identity.py` to anchor the signer pubkey on Arweave. Commit the returned tx id to `infra/arweave-identity.json`.
+- [ ] Verify `/agent-identity` returns the signer pubkey **and** the `arweave_identity_tx_id`.
+- [ ] Apply the Alembic migration that adds `arweave_tx_id` + `arweave_confirmed_at` (and `supersedes` on `flags`).
+- [ ] Ship the writer task (in-process background task is simpler for Phase 1a; promote to a sidecar if it becomes contention-heavy).
 - [ ] Add CloudWatch metrics: `arweave_writer_queue_depth`, `arweave_writer_confirm_latency_ms`, `arweave_wallet_balance_usd`.
 - [ ] Alarm: queue depth > 1000 OR wallet balance < $5.
 
 ---
 
-## Open questions
+## Resolved decisions (v0.2 — 2026-04-29)
 
-1. **Bundler:** Irys vs Ardrive Turbo vs others — Irys is the default choice, open to alternatives if Jonto has a preference.
-2. **Agent-identity anchoring:** do we want the signer pubkey itself committed to Arweave at install, or is the `/agent-identity` HTTP endpoint enough for Phase 1a? Bob's lean: anchor it on Arweave. One-time cost, removes a trust assumption.
-3. **Delete semantics:** Arweave is permanent by design. If a flag is emitted in error, we cannot delete the canonical record — we can only emit a correcting follow-up flag. Confirm this is acceptable; it's consistent with "flags are append-only attestations, not editable records."
+Jonto delegated these calls on 2026-04-29 ("make a call and run, no strong opinion"). Recorded here so the rationale survives.
+
+### 1. Bundler — **Irys** (confirmed)
+
+Irys is the lowest-friction option for Phase 1a:
+- Mature SDK in JS + Python; we're a Python shop.
+- Free-tier covers <100 KB items; flag attestations are ~500–800 B, so steady-state cost is effectively zero.
+- Funding accepts USDC + AR; no need to hold AR long-term.
+- Returns the Arweave tx id synchronously and the item is gateway-addressable within seconds — fits the writer-task latency budget.
+- Ardrive Turbo is functionally equivalent but adds an Ardrive account dependency and a less Python-friendly path. Reject for Phase 1a.
+
+**Switch criterion:** if Irys becomes unavailable or pricing changes materially, the writer task is the only Aegis-side dependency — Bundlr-protocol-compatible alternatives drop in by changing the endpoint URL and SDK package. No data-format coupling.
+
+### 2. Agent-identity anchoring — **Anchor pubkey on Arweave at install**
+
+Required, not optional. The whole point of Arweave-canonical attestations is that a third party can verify a flag without trusting any Aegis-operated server. If the signer pubkey itself is only published at `/agent-identity` (an Aegis-operated HTTP endpoint), then a malicious operator could swap the published pubkey to match a forged signature retroactively. Anchoring the pubkey on Arweave at install closes that gap.
+
+**Implementation:**
+- One-time at agent install: emit an Arweave tx whose body is a small JSON identity statement signed by the agent's private key:
+  ```json
+  {
+    "agent_id": "aegis-monitor-prod",
+    "version": "0.1",
+    "signer_address": "0x...",
+    "issued_at": "2026-04-29T00:00:00Z",
+    "supersedes": null
+  }
+  ```
+- Tags: `App-Name: aegis-monitor`, `App-Type: identity`, `Aegis-Agent-Id: <id>`, `Aegis-Signer-Address: 0x...`.
+- Resulting Arweave tx id is recorded in infra docs (and surfaced by `/agent-identity` as `arweave_identity_tx_id` for cross-reference).
+- **Key rotation:** publish a new identity statement with `supersedes: <previous_tx_id>`. Historical flags remain verifiable against the historical pubkey — the chain of identity statements is the audit trail.
+
+**Operator runbook addition (added to checklist below):**
+> Generate signing keypair → upload signed identity statement to Arweave → record returned tx id in `infra/arweave-identity.json` (committed to the repo) → ship.
+
+### 3. Append-only semantics — **Confirmed: corrections are follow-up flags, never deletes**
+
+Arweave permanence is an intentional property, not a workaround. An erroneous flag is corrected by emitting a follow-up flag whose `reason_structured` references the prior flag's id and supersedes it. Both records remain on Arweave; clients reading flag history present the latest non-superseded record per `(agent_id, tx_hash, rule_id)` tuple by default, with a "show full history" affordance.
+
+**Schema implication:** the `Attestation` body grows an optional `supersedes` field (mirroring the identity-statement pattern):
+
+```python
+class AttestationBody(BaseModel):
+    # ... existing fields ...
+    supersedes: int | None = None   # prior flag id this correction replaces
+```
+
+This is an additive, optional field. It does not break the canonical-json wire-format contract for any prior signed attestation (those omit the field entirely; canonical json drops null/absent fields uniformly). All prior signatures remain verifiable.
+
+**UI implication:** the `/flags` list endpoint takes an optional `?include_superseded=true` query param. Default is to hide superseded records.
+
+**Audit guarantee:** because Arweave is permanent, even a superseded flag is retrievable forever. A future investigation can always reconstruct exactly what the agent claimed and when, including subsequent corrections. This is the property that makes the system trustworthy.
+
+---
+
+## Follow-on tasks unblocked by these decisions
+
+- [ ] Add `supersedes: int | None` to `AttestationBody` (additive, no signature break).
+- [ ] Add `?include_superseded=true` query param to `GET /flags`.
+- [ ] Add `POST /flags/{id}/correct` operator endpoint that emits a superseding flag (with audit log of who issued the correction).
+- [ ] Implement `scripts/upload-agent-identity.py` — one-shot tool used during install to anchor the pubkey on Arweave.
+- [ ] Surface `arweave_identity_tx_id` from `/agent-identity` once the upload script has been run.
+- [ ] Wire Irys SDK into the writer task; smoke-test against Irys devnet first.
