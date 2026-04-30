@@ -44,6 +44,11 @@ def test_flag_column_surface() -> None:
         "ts_ms",
         "sig",
         "created_at",
+        # Append-only correction pointer (see arweave-flag-storage spec).
+        "supersedes",
+        # Arweave audit trail; populated async by the writer task.
+        "arweave_tx_id",
+        "arweave_confirmed_at",
     }
     actual = {c.name for c in Flag.__table__.columns}
     assert actual == expected
@@ -52,20 +57,24 @@ def test_flag_column_surface() -> None:
 def test_flag_indexes_cover_query_axes() -> None:
     names = {ix.name for ix in Flag.__table__.indexes}
     # The three spec-mandated axes plus the composite for recent-flags-per-address
-    # and per-rule lookups.
+    # and per-rule lookups, plus the correction pointer and the partial outbox
+    # index that the Arweave writer drains.
     assert {
         "ix_flags_monitored_address",
         "ix_flags_tx_hash",
         "ix_flags_ts_ms",
         "ix_flags_monitored_address_ts_ms",
         "ix_flags_rule_id",
+        "ix_flags_supersedes",
+        "ix_flags_arweave_pending",
     }.issubset(names)
 
 
 def test_flag_non_null_fields() -> None:
     nullable_names = {c.name for c in Flag.__table__.columns if c.nullable}
-    # Every column should be NOT NULL except… none. Everything is required.
-    assert nullable_names == set()
+    # supersedes + the two arweave columns are nullable by design — they're
+    # populated post-insert (correction emit / writer task).
+    assert nullable_names == {"supersedes", "arweave_tx_id", "arweave_confirmed_at"}
 
 
 # -----------------------------------------------------------------------------

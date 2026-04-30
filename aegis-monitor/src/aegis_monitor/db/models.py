@@ -63,6 +63,16 @@ class Flag(Base):
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )
+    # Append-only correction pointer. NULL on a fresh flag; set to the prior
+    # flag id when this row supersedes an earlier attestation. The prior row
+    # is never deleted — the chain is auditable.
+    supersedes: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
+    # Arweave audit trail. Populated asynchronously by the writer task; NULL
+    # while the row is still in the outbox queue.
+    arweave_tx_id: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    arweave_confirmed_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
 
     __table_args__ = (
         Index("ix_flags_monitored_address", "monitored_address"),
@@ -70,6 +80,14 @@ class Flag(Base):
         Index("ix_flags_ts_ms", "ts_ms"),
         Index("ix_flags_monitored_address_ts_ms", "monitored_address", "ts_ms"),
         Index("ix_flags_rule_id", "rule_id"),
+        Index("ix_flags_supersedes", "supersedes"),
+        # Partial index doubles as the outbox queue: pending Arweave uploads
+        # only. The writer task pulls off this with FOR UPDATE SKIP LOCKED.
+        Index(
+            "ix_flags_arweave_pending",
+            "id",
+            postgresql_where=text("arweave_tx_id IS NULL"),
+        ),
     )
 
 

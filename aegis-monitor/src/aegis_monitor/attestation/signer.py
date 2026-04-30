@@ -46,6 +46,11 @@ class AttestationSigner:
         """Checksummed Ethereum address of the signing key — publish this for verifiers."""
         return self._account.address
 
+    @property
+    def agent_id(self) -> str:
+        """Stable agent identifier stamped into every attestation body."""
+        return self._agent_id
+
     def sign(self, body: AttestationBody) -> Attestation:
         """Sign a pre-built body. Useful when the consumer has already chosen `ts_ms`."""
         message = encode_defunct(body.canonical_json())

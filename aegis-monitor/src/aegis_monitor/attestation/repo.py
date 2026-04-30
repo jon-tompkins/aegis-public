@@ -31,6 +31,8 @@ async def insert_attestation(session: AsyncSession, attestation: Attestation) ->
         agent_id=attestation.agent_id,
         ts_ms=attestation.ts_ms,
         sig=attestation.sig,
+        supersedes=attestation.supersedes,
+        # arweave_tx_id stays NULL — the writer task fills it in async.
     )
     session.add(flag)
     await session.flush()

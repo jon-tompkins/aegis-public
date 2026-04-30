@@ -156,6 +156,12 @@ class AttestationBody(BaseModel):
     Stability matters: any change to the canonical serialisation (field
     order, whitespace, key names) breaks every prior signature. Treat this
     class as a wire-format contract.
+
+    Optional fields (currently `supersedes`) are omitted from canonical
+    output when None via `exclude_none=True`. New optional fields stay
+    forward-compatible: an attestation that doesn't carry the field
+    canonicalises identically before and after the field's introduction,
+    so historical signatures remain verifiable.
     """
 
     model_config = ConfigDict(frozen=True)
@@ -169,6 +175,14 @@ class AttestationBody(BaseModel):
     reason_structured: dict[str, Any] = Field(default_factory=dict)
     agent_id: str
     ts_ms: int = Field(ge=0, description="Unix epoch milliseconds")
+    supersedes: int | None = Field(
+        default=None,
+        ge=1,
+        description=(
+            "Prior flag id this attestation corrects. None for a fresh flag. "
+            "Append-only correction semantics — see arweave-flag-storage spec."
+        ),
+    )
 
     @field_validator("tx_hash")
     @classmethod
@@ -191,9 +205,13 @@ class AttestationBody(BaseModel):
         pretty-print. Do not reorder fields. If the protocol wants a change,
         bump `rule_version` or add a versioned wrapper — never mutate this
         function quietly.
+
+        `exclude_none=True` keeps optional fields out of the canonical form
+        when unset, so adding a new optional field doesn't silently break
+        signatures that pre-date it.
         """
         return json.dumps(
-            self.model_dump(mode="json"),
+            self.model_dump(mode="json", exclude_none=True),
             sort_keys=True,
             separators=(",", ":"),
             ensure_ascii=False,
@@ -222,8 +240,36 @@ class Attestation(AttestationBody):
 
 
 class FlagResponse(BaseModel):
-    """One row from `GET /flags` — persistence id + full attestation."""
+    """One row from `GET /flags` — persistence id + full attestation.
+
+    `arweave_tx_id` and `arweave_confirmed_at` are populated asynchronously
+    by the Arweave writer task. Clients that don't care about the audit
+    trail can ignore both fields; clients that do can treat a non-null
+    `arweave_tx_id` as "this flag is permanently published".
+    """
 
     id: int
     attestation: Attestation
     created_at: datetime
+    arweave_tx_id: str | None = None
+    arweave_confirmed_at: datetime | None = None
+
+
+class FlagProof(BaseModel):
+    """`GET /flags/{id}/proof` payload — everything a third party needs.
+
+    No Aegis server is in the trust path: the verifier fetches the
+    canonical body from the public Arweave gateway, recovers the signer
+    from `sig`, and compares against `signer_address`. We only ship the
+    pointers and a copy-pasteable how-to.
+    """
+
+    flag_id: int
+    arweave_tx_id: str | None
+    gateway_url: str | None
+    canonical_body_bytes_b64: str
+    sig: str
+    signer_address: str
+    verify_howto: str = (
+        "docs/specs/arweave-flag-storage.md#verifying-a-flag"
+    )
